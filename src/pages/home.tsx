@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import MovieRow_1 from '../components/MovieRow_1';
 import MovieRow_2 from '../components/MovieRow_2';
+import CONFIG from '../config';
 
 const HomeScreen: React.FC = () => {
     const [recommendedMovies, setRecommendedMovies] = useState<any[]>([]);
@@ -21,13 +22,15 @@ const HomeScreen: React.FC = () => {
                 const storedUser = localStorage.getItem("user");
                 if (!storedUser) return;
 
-                const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+                const user = JSON.parse(storedUser);
+                const userID = user._id;
+                const TMDB_API_KEY = CONFIG.TMDB_API_KEY;
 
                 // 1. Fetch Recommendations
-                const recResponse = await fetch('/api/recommend/', {
+                const recResponse = await fetch('https://cop4331project.xyz/api/recommend/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userID: "69d6b14788ac6679babc0dec" })
+                    body: JSON.stringify({ userID: userID })
                 });
                 const recData = await recResponse.json();
                 

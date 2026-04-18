@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import CONFIG from '../../config';
 
 const CinematchScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -50,8 +51,8 @@ const CinematchScreen: React.FC = () => {
 
       const user = JSON.parse(storedUser);
       
-
-      const response = await fetch(`http://localhost:8080/api/users/${user._id}/genres`, {
+      const apiBase = CONFIG.API_BASE_URL;
+      const response = await fetch(`${apiBase}/api/users/${user._id}/genres`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -157,8 +158,10 @@ const CinematchScreen: React.FC = () => {
               <button className="text-gray-400 hover:text-white transition-colors font-medium flex items-center gap-2 cursor-pointer" onClick={() => navigate('/services')}>
                 <span>&larr;</span> Back
               </button>
-              <button className="bg-[#E85D22] hover:bg-[#d04e1b] text-white px-8 py-3.5 rounded-full font-bold transition-colors flex items-center gap-2 cursor-pointer" onClick={() => handleContinue()}>
-                Continue <span>&rarr;</span>
+              <button className="bg-[#E85D22] hover:bg-[#d04e1b] text-white px-8 py-3.5 rounded-full font-bold transition-colors flex items-center gap-2 cursor-pointer" onClick={() => handleContinue()}
+                           disabled={isLoading}
+                           >
+                           {isLoading ? 'Saving...' : <>Continue <span>&rarr;</span></>}
               </button>
             </div>
           </div>

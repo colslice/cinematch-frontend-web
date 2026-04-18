@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import CONFIG from '../config';
 
 // TMDB uses IDs for genres. We map them to text here so we don't need a separate API call.
 const GENRE_MAP: { [key: number]: string } = {
@@ -24,7 +25,7 @@ interface MovieResult {
 }
 
 const Search: React.FC = () => {
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState('All services');
     const [searchResults, setSearchResults] = useState<MovieResult[]>([]);
@@ -51,8 +52,8 @@ const Search: React.FC = () => {
         const delayDebounceFn = setTimeout(async () => {
             setIsLoading(true);
             try {
-                // IMPORTANT: Replace this with your actual TMDB API Key, preferably from an .env file
-                const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+                
+                const API_KEY = CONFIG.TMDB_API_KEY;
                 
                 const response = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(searchQuery)}&language=en-US&page=1`);
                 

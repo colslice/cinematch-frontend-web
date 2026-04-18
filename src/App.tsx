@@ -14,13 +14,13 @@ import Search from './pages/search.tsx'
 
 function App() {
 
-  const user = localStorage.getItem('user');
-
+  const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user') || '{}') : null;
+  const isFirstLogin = user?.isFirstLogin;
   return (
     <BrowserRouter>
       <Routes>
       
-        <Route path="/" element={user ? <Home /> : <Splash />} />
+        <Route path="/" element={user ? isFirstLogin ? <Navigate to="/services" /> : <Home /> : <Splash />} />
         
         <Route path="/splash" element={<Splash />} />
         <Route path="/create" element={<Create />} />
@@ -28,8 +28,6 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/search" element={<Search />} />
-
-        <Route path="/" element={user ? <Home /> : <Splash />} />
 
         {/* The following routes are protected and will only render if the user is authenticated. Otherwise, they will redirect to the splash page. */}
         {/* if you need to test these routes, uncomment them and ensure the user is authenticated */}

@@ -42,7 +42,7 @@ const SplashScreen: React.FC = () => {
       }
 
       try {
-          const response = await fetch('http://localhost:8080/api/auth/signup', {
+          const response = await fetch('https:/cop4331project.xyz//api/auth/signup', {
               method: 'POST',
               headers: {
                   'Content-Type': 'application/json'
