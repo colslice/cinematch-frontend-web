@@ -1,10 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import Navbar from '../components/Navbar';
 
+// You will need your TMDB key here since the frontend has to hydrate the movie details
+const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+
 interface Stub {
-    id: number;
+    dbId: string;   // The MongoDB _id (used for deleting the record)
+    movieId: string; // The TMDB ID
     title: string;
     year: string;
     poster: string;
@@ -12,94 +16,16 @@ interface Stub {
     genre: string;
     service: string;
     added: string;
+    status: string;
 }
 
-const STUBS: Stub[] = [
-    {
-        id: 1,
-        title: 'Dune: Part Two',
-        year: '2024',
-        poster: 'https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg',
-        match: 94,
-        genre: 'Sci-Fi',
-        service: 'Netflix',
-        added: 'Apr 10',
-    },
-    {
-        id: 2,
-        title: 'Oppenheimer',
-        year: '2023',
-        poster: 'https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg',
-        match: 91,
-        genre: 'Drama',
-        service: 'Prime',
-        added: 'Apr 8',
-    },
-    {
-        id: 3,
-        title: 'Past Lives',
-        year: '2023',
-        poster: 'https://image.tmdb.org/t/p/w500/k3waqVXSnSQdTOGWaFRBdSWRJsq.jpg',
-        match: 88,
-        genre: 'Romance',
-        service: 'Hulu',
-        added: 'Apr 5',
-    },
-    {
-        id: 4,
-        title: 'The Zone of Interest',
-        year: '2023',
-        poster: 'https://image.tmdb.org/t/p/w500/hUu9zyZmKuTGAHwRmHBM85NuQqS.jpg',
-        match: 85,
-        genre: 'History',
-        service: 'Max',
-        added: 'Apr 3',
-    },
-    {
-        id: 5,
-        title: 'Killers of the Flower Moon',
-        year: '2023',
-        poster: 'https://image.tmdb.org/t/p/w500/dB6PAXBQ9KXc2bSH0M0iFOFIEnO.jpg',
-        match: 82,
-        genre: 'Crime',
-        service: 'Prime',
-        added: 'Apr 1',
-    },
-    {
-        id: 6,
-        title: 'Poor Things',
-        year: '2023',
-        poster: 'https://image.tmdb.org/t/p/w500/kCGlIMHnOm8JPXIRya0KEp3fqRP.jpg',
-        match: 79,
-        genre: 'Fantasy',
-        service: 'Hulu',
-        added: 'Mar 28',
-    },
-    {
-        id: 7,
-        title: 'Wonka',
-        year: '2023',
-        poster: 'https://image.tmdb.org/t/p/w500/qhb1qOilapbapnkaIX8CTgBt4gk.jpg',
-        match: 76,
-        genre: 'Musical',
-        service: 'Max',
-        added: 'Mar 25',
-    },
-    {
-        id: 8,
-        title: 'Civil War',
-        year: '2024',
-        poster: 'https://image.tmdb.org/t/p/w500/sh7Rg8Er3tFcN9BpKIPOMvALgZd.jpg',
-        match: 73,
-        genre: 'Action',
-        service: 'Netflix',
-        added: 'Mar 22',
-    },
-];
-
-const getBarcodePattern = (id: number): number[] => {
+const getBarcodePattern = (idStr: string): number[] => {
+    let hash = 0;
+    for (let i = 0; i < idStr.length; i++) {
+        hash = idStr.charCodeAt(i) + ((hash << 5) - hash);
+    }
     const bars: number[] = [];
-    let seed = (id + 7) * 1664525;
+    let seed = Math.abs((hash + 7) * 1664525);
     for (let i = 0; i < 42; i++) {
         seed = (seed * 22695477 + 1) & 0x7fffffff;
         bars.push(seed % 7 < 1 ? 3 : seed % 7 < 3 ? 2 : 1);
@@ -115,7 +41,7 @@ const RATING_LABELS: Record<number, string> = {
     5: 'Perfect',
 };
 
-const Barcode: React.FC<{ id: number }> = ({ id }) => {
+const Barcode: React.FC<{ id: string }> = ({ id }) => {
     const bars = useMemo(() => getBarcodePattern(id), [id]);
     return (
         <div className="flex items-stretch justify-center gap-[1.5px] h-10 px-6">
@@ -127,13 +53,7 @@ const Barcode: React.FC<{ id: number }> = ({ id }) => {
 };
 
 const InfoCell: React.FC<{ label: string; value: string; orange?: boolean; large?: boolean }> =
-    ({
-      label,
-      value,
-      orange,
-      large,
-
-     }) => (
+    ({ label, value, orange, large }) => (
     <div>
         <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">{label}</p>
         <p className={`font-bold ${large ? 'text-xl leading-none' : 'text-sm'} ${orange ? 'text-[#E85D22]' : 'text-black'}`}>
@@ -152,8 +72,12 @@ const StubCard: React.FC<StubCardProps> = ({ stub, onClick }) => (
         onClick={onClick}
         className="relative bg-white rounded-2xl shadow-md transition-all duration-300 select-none flex flex-col h-[412px] cursor-pointer hover:-translate-y-2 hover:shadow-2xl"
     >
-        <div className="flex-1 overflow-hidden rounded-t-2xl">
-            <img src={stub.poster} alt={stub.title} className="w-full h-full object-cover" />
+        <div className="flex-1 overflow-hidden rounded-t-2xl bg-gray-200">
+            {stub.poster ? (
+                <img src={stub.poster} alt={stub.title} className="w-full h-full object-cover" />
+            ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No Poster</div>
+            )}
         </div>
 
         <div className="grid grid-cols-2">
@@ -178,37 +102,149 @@ const StubCard: React.FC<StubCardProps> = ({ stub, onClick }) => (
         </div>
 
         <div className="pt-2 pb-3">
-            <Barcode id={stub.id} />
+            <Barcode id={stub.dbId} />
             <p className="text-center text-[7px] text-gray-300 tracking-widest mt-1">
-                {String(stub.id).padStart(6, '0')}-CINEMATCH
+                {stub.movieId.padStart(6, '0')}-CINEMATCH
             </p>
         </div>
     </div>
 );
 
+
 const WatchlistPage: React.FC = () => {
+    // --- LOCAL STORAGE LOGIC ADDED HERE ---
+    const storedUser = localStorage.getItem('user');
+    const userId = storedUser ? JSON.parse(storedUser)._id : null;
+
+    console.log('--- WatchlistPage Render Triggered --- | userId from storage:', userId);
+
+    const [stubs, setStubs] = useState<Stub[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
     const [selectedStub, setSelectedStub] = useState<Stub | null>(null);
     const [hoveredStar, setHoveredStar] = useState<number | null>(null);
     const [activeSort, setActiveSort] = useState<'recent' | 'match' | 'az'>('recent');
     const [isTearing, setIsTearing] = useState(false);
-    const [removedStubs, setRemovedStubs] = useState<Set<number>>(new Set());
+    const [removedStubs, setRemovedStubs] = useState<Set<string>>(new Set());
 
-    const sortedStubs = [...STUBS]
-        .filter(s => !removedStubs.has(s.id))
+    useEffect(() => {
+        if (!userId) {
+            console.log('[0] No userId available yet. Halting fetch.');
+            setLoading(false);
+            return;
+        }
+
+        const fetchWatchlist = async () => {
+            try {
+                console.log(`[1] Starting DB fetch for user: ${userId}`);
+                setLoading(true);
+                setError(null);
+                
+                // 1. Fetch from Express
+                const dbResponse = await fetch(`http://localhost:8080/api/watchlist/user/${userId}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+
+                console.log(`[2] DB Response Status:`, dbResponse.status);
+
+                if (!dbResponse.ok) throw new Error(`DB Fetch failed with status ${dbResponse.status}`);
+                
+                const dbData = await dbResponse.json(); 
+                console.log(`[3] DB Data Parsed:`, dbData);
+
+                // Safety Check: Make sure it's an array before mapping
+                if (!Array.isArray(dbData)) {
+                    throw new Error("Expected database to return an array, but got: " + typeof dbData);
+                }
+
+                if (dbData.length === 0) {
+                    console.log('[3b] User has no movies in their watchlist.');
+                    setStubs([]);
+                    return; // exit early if no movies
+                }
+
+                // 2. Fetch from TMDB
+                const hydratedStubsPromises = dbData.map(async (item: any) => {
+                    try {
+                        console.log(`[4a] Fetching TMDB for movieId: ${item.movieId}`);
+                        const tmdbResponse = await fetch(
+                            `https://api.themoviedb.org/3/movie/${item.movieId}?api_key=${TMDB_API_KEY}`
+                        );
+                        
+                        if (!tmdbResponse.ok) {
+                            console.warn(`[WARNING] TMDB failed for movieId ${item.movieId}`);
+                            return null; 
+                        }
+                        
+                        const tmdbData = await tmdbResponse.json();
+                        console.log(`[4b] TMDB Success for ${item.movieId}:`, tmdbData.title);
+
+                        return {
+                            dbId: item._id, 
+                            movieId: item.movieId,
+                            title: tmdbData.title,
+                            year: tmdbData.release_date ? tmdbData.release_date.split('-')[0] : 'N/A',
+                            poster: tmdbData.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}` : '',
+                            match: Math.floor(Math.random() * 20) + 80, 
+                            genre: tmdbData.genres?.[0]?.name || 'Cinema',
+                            service: 'VOD', 
+                            added: item.addedAt ? new Date(item.addedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Recently',
+                            status: item.status
+                        } as Stub;
+
+                    } catch (err) {
+                        console.error(`[ERROR] Caught error fetching TMDB data for ${item.movieId}:`, err);
+                        return null;
+                    }
+                });
+
+                const resolvedStubs = (await Promise.all(hydratedStubsPromises)).filter((stub): stub is Stub => stub !== null);
+                
+                console.log(`[5] All promises resolved. Final Hydrated Stubs:`, resolvedStubs);
+                setStubs(resolvedStubs);
+
+            } catch (err: any) {
+                console.error(`[FATAL ERROR] Fetch Process Failed:`, err);
+                setError(err.message);
+            } finally {
+                console.log(`[6] Fetch process finished. Setting loading to false.`);
+                setLoading(false);
+            }
+        };
+
+        fetchWatchlist();
+    }, [userId]);
+
+    const sortedStubs = [...stubs]
+        .filter(s => !removedStubs.has(s.dbId))
         .sort((a, b) => {
             if (activeSort === 'match') return b.match - a.match;
             if (activeSort === 'az') return a.title.localeCompare(b.title);
-            return b.id - a.id;
+            return new Date(b.added).getTime() - new Date(a.added).getTime(); 
         });
 
-    const tearAndClose = (id: number) => {
+    const tearAndClose = async (dbId: string) => {
         setIsTearing(true);
+        console.log(`[DELETE] Starting removal for dbId: ${dbId}`);
+        
         setTimeout(() => {
-            setRemovedStubs(prev => new Set([...prev, id]));
+            setRemovedStubs(prev => new Set([...prev, dbId]));
             setSelectedStub(null);
             setHoveredStar(null);
             setIsTearing(false);
         }, 700);
+
+        try {
+            const deleteRes = await fetch(`http://localhost:8080/api/watchlist/${dbId}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            console.log(`[DELETE] Response Status:`, deleteRes.status);
+        } catch (err) {
+            console.error("[DELETE ERROR] Failed to remove from database:", err);
+        }
     };
 
     const closeModal = () => {
@@ -217,13 +253,22 @@ const WatchlistPage: React.FC = () => {
         setHoveredStar(null);
     };
 
+    if (loading) return <div className="min-h-screen bg-[#0d0d0d] text-white flex items-center justify-center font-sans">Loading Watchlist...</div>;
+    
+    if (error) return (
+        <div className="min-h-screen bg-[#0d0d0d] text-red-500 flex flex-col items-center justify-center font-sans p-10 text-center">
+            <h2 className="text-2xl font-bold mb-2">Something went wrong</h2>
+            <p className="text-gray-400">{error}</p>
+            <p className="text-gray-500 text-sm mt-4">Check your browser console for detailed logs.</p>
+        </div>
+    );
+
     return (
         <div className="min-h-screen bg-[#0d0d0d] text-white font-sans">
-
             <Navbar />
 
-            <main className="px-10 pt-10 pb-16">
-                <p className="text-[#E85D22] text-[10px] font-bold tracking-widest uppercase mb-1">
+            <main className="px-8 md:px-40 pt-10 pb-16">
+                <p className="text-[#E85D22] text-sm font-bold tracking-widest uppercase mb-1">
                     Saved to Watch
                 </p>
                 <h1 className="text-6xl font-serif text-white mb-8">Your Watchlist</h1>
@@ -251,17 +296,22 @@ const WatchlistPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-10">
-                    {sortedStubs.map(stub => (
-                        <div key={stub.id} className="w-[302px]">
-                            <StubCard
-                                stub={stub}
-                                onClick={() => setSelectedStub(stub)}
-                            />
-                        </div>
-                    ))}
+                    {sortedStubs.length > 0 ? (
+                        sortedStubs.map(stub => (
+                            <div key={stub.dbId} className="w-[302px]">
+                                <StubCard
+                                    stub={stub}
+                                    onClick={() => setSelectedStub(stub)}
+                                />
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-gray-500">Your watchlist is empty.</p>
+                    )}
                 </div>
             </main>
 
+            {/* Modal Overlay */}
             {selectedStub && (
                 <div
                     className="fixed inset-0 bg-black/[0.92] flex items-center justify-center z-50 p-4"
@@ -279,13 +329,16 @@ const WatchlistPage: React.FC = () => {
                         </div>
 
                         <div className="relative bg-white rounded-t-2xl w-64 shadow-2xl">
-
                             <div className="w-full aspect-[3/4] overflow-hidden rounded-t-2xl">
-                                <img
-                                    src={selectedStub.poster}
-                                    alt={selectedStub.title}
-                                    className="w-full h-full object-cover"
-                                />
+                                {selectedStub.poster ? (
+                                    <img
+                                        src={selectedStub.poster}
+                                        alt={selectedStub.title}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs">No Poster</div>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-2">
@@ -316,9 +369,9 @@ const WatchlistPage: React.FC = () => {
                                 isTearing ? 'translate-y-14 opacity-0' : 'translate-y-0 opacity-100'
                             }`}
                         >
-                            <Barcode id={selectedStub.id} />
+                            <Barcode id={selectedStub.dbId} />
                             <p className="text-center text-[8px] text-gray-300 tracking-widest mt-1">
-                                {String(selectedStub.id).padStart(6, '0')}-CINEMATCH
+                                {selectedStub.movieId.padStart(6, '0')}-CINEMATCH
                             </p>
                         </div>
 
@@ -338,7 +391,7 @@ const WatchlistPage: React.FC = () => {
                                         key={star}
                                         onMouseEnter={() => setHoveredStar(star)}
                                         onMouseLeave={() => setHoveredStar(null)}
-                                        onClick={() => tearAndClose(selectedStub.id)}
+                                        onClick={() => tearAndClose(selectedStub.dbId)}
                                         className="cursor-pointer transition-transform hover:scale-110"
                                     >
                                         <StarIcon
@@ -357,17 +410,15 @@ const WatchlistPage: React.FC = () => {
                             <div className="border-t border-white/10 mb-4" />
 
                             <button
-                                onClick={() => tearAndClose(selectedStub.id)}
+                                onClick={() => tearAndClose(selectedStub.dbId)}
                                 className="w-full text-center text-gray-400 text-sm hover:text-white transition-colors cursor-pointer"
                             >
                                 Skip &amp; mark as watched
                             </button>
                         </div>
-
                     </div>
                 </div>
             )}
-
         </div>
     );
 };

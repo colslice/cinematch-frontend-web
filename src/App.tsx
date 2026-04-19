@@ -47,6 +47,7 @@ function App() {
         <Route path="/watchlist" element={<Watchlist />} />
         */}
 
+        <Route path="/reviews" element={user ? <Reviews /> : <Navigate to="/" />} />
         <Route path="/home" element={user ? <Home /> : <Navigate to="/" />} />
         <Route path="/rating" element={user ? <Rating /> : <Navigate to="/" />} />
         <Route path="/services" element={user ? <Services /> : <Navigate to="/" />} />

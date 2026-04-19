@@ -1,35 +1,30 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { StarIcon } from '@heroicons/react/24/solid';
 
-// DUMMY DATA (swap for real API data later)
-const MOVIE = {
-    title: 'Interstellar',
-    director: 'Christopher Nolan',
-    year: '2014',
-    runtime: '169 mins',
-    rating: 'PG-13',
-    genres: ['Sci-fi', 'Adventure'],
-    backdrop: 'https://image.tmdb.org/t/p/w1280/yQvGrMoipbRoddT0ZR8tPoR7NfX.jpg',
-    poster: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
-    description: "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival. When Earth's future is threatened by a dying planet, a former NASA pilot leads a mission into deep space trading years with his daughter for the chance to save our species.",
-    streamingOn: ['Netflix', 'Hulu', 'Prime Video'],
-    matchScore: 97,
-    matchReason: 'Based on your 5-star rating of Ex Machina and high marks for Arrival. You consistently rate cerebral, emotionally-driven sci-fi at the top. Interstellar matches this pattern with a 97% matching score.',
-    imdbRating: 8.7,
-    cast: [
-        { name: 'Matthew McConaughey', initials: 'MM' },
-        { name: 'Anne Hathaway', initials: 'AH' },
-        { name: 'Jessica Chastain', initials: 'JC' },
-    ],
-};
+const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
 const MovieDetail: React.FC = () => {
     const navigate = useNavigate();
-    const [addedToWatchlist, setAddedToWatchlist] = React.useState(false);
-    const [showRating, setShowRating] = React.useState(false);
-    const [userRating, setUserRating] = React.useState(0);
-    const [hoveredStar, setHoveredStar] = React.useState<number | null>(null);
+    const { id } = useParams<{ id: string }>(); // Grabs movie ID from URL
+
+    // Get user from local storage
+    const storedUser = localStorage.getItem('user');
+    const userId = storedUser ? JSON.parse(storedUser)._id : null;
+
+    // TMDB Data State
+    const [movie, setMovie] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // User Interaction State
+    const [addedToWatchlist, setAddedToWatchlist] = useState(false);
+    const [watchlistDbId, setWatchlistDbId] = useState<string | null>(null); // MongoDB _id for watchlist
+    
+    const [showRating, setShowRating] = useState(false);
+    const [userRating, setUserRating] = useState(0);
+    const [reviewDbId, setReviewDbId] = useState<string | null>(null); // MongoDB _id for review
+    const [hoveredStar, setHoveredStar] = useState<number | null>(null);
 
     const ratingLabels: Record<number, string> = {
         1: 'Poor',
@@ -39,55 +34,205 @@ const MovieDetail: React.FC = () => {
         5: 'Perfect',
     };
 
+    // FETCH TMDB MOVIE DATA
+    useEffect(() => {
+        const fetchMovieData = async () => {
+            if (!id) return;
+            try {
+                setLoading(true);
+                const response = await fetch(
+                    `https://api.themoviedb.org/3/movie/${id}?api_key=${TMDB_API_KEY}&append_to_response=credits,release_dates,watch/providers`
+                );
+
+                if (!response.ok) throw new Error('Failed to fetch movie data');
+                const data = await response.json();
+
+                const director = data.credits?.crew?.find((c: any) => c.job === 'Director')?.name || 'Unknown';
+                const usRelease = data.release_dates?.results?.find((r: any) => r.iso_3166_1 === 'US');
+                const rating = usRelease?.release_dates?.[0]?.certification || 'NR';
+                const providers = data['watch/providers']?.results?.US?.flatrate?.map((p: any) => p.provider_name) || [];
+                const cast = data.credits?.cast?.slice(0, 3).map((c: any) => {
+                    const initials = c.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+                    return { name: c.name, initials };
+                }) || [];
+
+                setMovie({
+                    title: data.title,
+                    director: director,
+                    year: data.release_date?.split('-')[0] || 'Unknown',
+                    runtime: `${data.runtime} mins`,
+                    rating: rating,
+                    genres: data.genres?.map((g: any) => g.name) || [],
+                    backdrop: data.backdrop_path ? `https://image.tmdb.org/t/p/w1280${data.backdrop_path}` : '',
+                    poster: data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : '',
+                    description: data.overview,
+                    streamingOn: providers,
+                    imdbRating: data.vote_average ? data.vote_average.toFixed(1) : 'N/A',
+                    cast: cast,
+                    matchScore: 97,
+                    matchReason: 'Based on your viewing history, you consistently rate cerebral, emotionally-driven sci-fi at the top. This matches your pattern.',
+                });
+            } catch (err: any) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchMovieData();
+    }, [id]);
+
+    // Is it in their watchlist/ratings?
+    useEffect(() => {
+        if (!userId || !id) return;
+
+        const checkUserDatabaseStatus = async () => {
+            try {
+                // Check Watchlist
+                const wlResponse = await fetch(`/api/watchlist/user/${userId}`);
+                if (wlResponse.ok) {
+                    const wlData = await wlResponse.json();
+                    // Match TMDB id with database movieId
+                    const existingWl = wlData.find((item: any) => String(item.movieId) === String(id));
+                    if (existingWl) {
+                        setAddedToWatchlist(true);
+                        setWatchlistDbId(existingWl._id || existingWl.id);
+                    }
+                }
+
+                // Check Ratings/Reviews
+                const revResponse = await fetch(`/api/reviews/user/${userId}`);
+                if (revResponse.ok) {
+                    const revData = await revResponse.json();
+                    const existingRev = revData.find((item: any) => String(item.movieId) === String(id));
+                    if (existingRev) {
+                        setUserRating(existingRev.rating || existingRev.score || 0);
+                        setReviewDbId(existingRev._id || existingRev.id);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load user status for this movie", err);
+            }
+        };
+
+        checkUserDatabaseStatus();
+    }, [userId, id]);
+
+    // 3. HANDLER: TOGGLE WATCHLIST
+    const handleWatchlistToggle = async () => {
+        if (!userId) {
+            alert("Please log in to manage your watchlist.");
+            return;
+        }
+
+        try {
+            if (addedToWatchlist && watchlistDbId) {
+                // Remove from database
+                setAddedToWatchlist(false); // Optimistic UI update
+                await fetch(`/api/watchlist/${watchlistDbId}`, { method: 'DELETE' });
+                setWatchlistDbId(null);
+            } else {
+                // Add to database
+                setAddedToWatchlist(true); // Optimistic UI update
+                const response = await fetch(`/api/watchlist`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, movieId: id, status: 'Plan to Watch' })
+                });
+                
+                const data = await response.json();
+                if (data._id || data.id) setWatchlistDbId(data._id || data.id);
+            }
+        } catch (err) {
+            console.error("Failed to toggle watchlist", err);
+        }
+    };
+
+    // 4. HANDLER: RATE MOVIE
+    const handleRateMovie = async (star: number) => {
+        if (!userId) {
+            alert("Please log in to rate movies.");
+            return;
+        }
+
+        try {
+            setUserRating(star); // Optimistic UI update
+            setShowRating(false);
+
+            if (reviewDbId) {
+                // Update existing rating in DB
+                await fetch(`/api/reviews/${reviewDbId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rating: star })
+                });
+            } else {
+                // Create new rating in DB
+                const response = await fetch(`/api/reviews`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, movieId: id, rating: star })
+                });
+                
+                const data = await response.json();
+                if (data._id || data.id) setReviewDbId(data._id || data.id);
+            }
+        } catch (err) {
+            console.error("Failed to rate movie", err);
+        }
+    };
+
+    if (loading) return <div className="min-h-screen bg-[#2b2b2b] text-white flex items-center justify-center">Loading...</div>;
+    if (error) return <div className="min-h-screen bg-[#2b2b2b] text-white flex items-center justify-center">Error: {error}</div>;
+    if (!movie) return null;
+
     return (
         <div className="min-h-screen bg-[#2b2b2b] text-white font-sans">
-
             {/* ── Backdrop ── */}
             <div className="relative w-full h-[420px]">
-                <img
-                    src={MOVIE.backdrop}
-                    alt={MOVIE.title}
-                    className="absolute inset-0 w-full h-full object-cover object-top"
-                />
-                {/* Gradient overlay */}
+                {movie.backdrop && (
+                    <img
+                        src={movie.backdrop}
+                        alt={movie.title}
+                        className="absolute inset-0 w-full h-full object-cover object-top"
+                    />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#2b2b2b] via-[#2b2b2b]/40 to-transparent" />
 
-                {/* ← back */}
                 <button
                     onClick={() => navigate(-1)}
-                    className="absolute top-5 left-8 text-white text-sm hover:text-gray-300 transition-colors"
+                    className="absolute top-5 left-8 text-white text-sm hover:text-gray-300 transition-colors cursor-pointer"
                 >
                     ← back
                 </button>
 
-                {/* Genre pills */}
                 <div className="absolute bottom-16 left-8 flex gap-2">
-                    {MOVIE.genres.map((genre, idx) => (
+                    {movie.genres.map((genre: string, idx: number) => (
                         <span key={idx} className="px-3 py-1 rounded-full bg-white/10 text-white text-xs font-semibold">
-              {genre}
-            </span>
+                            {genre}
+                        </span>
                     ))}
                 </div>
             </div>
 
             {/* ── Title + Meta + Buttons ── */}
             <div className="px-8 pb-6">
-                <h1 className="text-6xl font-serif text-white mb-2 leading-tight">{MOVIE.title}</h1>
+                <h1 className="text-6xl font-serif text-white mb-2 leading-tight">{movie.title}</h1>
                 <p className="text-[#888] text-sm mb-5 tracking-tight">
-                    {MOVIE.director} · {MOVIE.year} · {MOVIE.runtime.replace(' mins', 'm')} · {MOVIE.rating}
+                    {movie.director} · {movie.year} · {movie.runtime.replace(' mins', 'm')} · {movie.rating}
                 </p>
 
-                {/* Buttons + Streaming */}
                 <div className="flex flex-wrap items-end gap-6 mb-10">
                     <div className="flex gap-3">
                         <button
-                            onClick={() => setAddedToWatchlist(!addedToWatchlist)}
+                            onClick={handleWatchlistToggle} // <-- Hooked up to backend
                             className={`px-5 py-2.5 rounded-[10px] text-sm font-bold transition-colors cursor-pointer ${
                                 addedToWatchlist ? 'bg-white text-black' : 'bg-[#E85D22] hover:bg-[#d0521e] text-white'
                             }`}
                         >
                             {addedToWatchlist ? '✓ Added to watchlist' : '+ Add to watchlist'}
                         </button>
+                        
                         {userRating > 0 ? (
                             <button
                                 onClick={() => setShowRating(!showRating)}
@@ -106,17 +251,18 @@ const MovieDetail: React.FC = () => {
                     </div>
 
                     {/* Available On */}
-                    <div>
-                        <p className="text-[#888] text-[10px] font-semibold tracking-widest uppercase mb-2">Available On</p>
-                        <div className="flex items-center gap-5">
-                            {/* Netflix */}
-                            <span className="text-[#E50914] font-black text-lg tracking-tight">NETFLIX</span>
-                            {/* Hulu */}
-                            <span className="text-[#1CE783] font-black text-lg">hulu</span>
-                            {/* Prime Video */}
-                            <span className="text-[#00A8E0] font-bold text-base">prime <span className="text-white">video</span></span>
+                    {movie.streamingOn.length > 0 && (
+                        <div>
+                            <p className="text-[#888] text-[10px] font-semibold tracking-widest uppercase mb-2">Available On</p>
+                            <div className="flex items-center gap-5">
+                                {movie.streamingOn.map((provider: string, idx: number) => (
+                                    <span key={idx} className="font-bold text-sm tracking-tight text-white/80">
+                                        {provider}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* ── Rating Bar ── */}
@@ -129,7 +275,7 @@ const MovieDetail: React.FC = () => {
                                     key={star}
                                     onMouseEnter={() => setHoveredStar(star)}
                                     onMouseLeave={() => setHoveredStar(null)}
-                                    onClick={() => { setUserRating(star); setShowRating(false); }}
+                                    onClick={() => handleRateMovie(star)} // <-- Hooked up to backend
                                     className="cursor-pointer transition-transform hover:scale-110"
                                 >
                                     <StarIcon
@@ -142,66 +288,67 @@ const MovieDetail: React.FC = () => {
                         </div>
                         {(hoveredStar || userRating) ? (
                             <span className="text-[#E85D22] text-sm font-semibold">
-                {ratingLabels[hoveredStar ?? userRating]}
-              </span>
+                                {ratingLabels[hoveredStar ?? userRating]}
+                            </span>
                         ) : null}
                     </div>
                 )}
 
-                {/* Lower Section: Two Columns */}
+                {/* Lower Section */}
                 <div className="flex gap-10">
-
                     {/* Left Column */}
                     <div className="flex-1">
                         <div className="flex gap-6 mb-6">
-                            {/* Poster */}
-                            <img
-                                src={MOVIE.poster}
-                                alt={MOVIE.title}
-                                className="w-[165px] h-[230px] object-cover rounded-lg flex-shrink-0"
-                            />
+                            {movie.poster ? (
+                                <img
+                                    src={movie.poster}
+                                    alt={movie.title}
+                                    className="w-[165px] h-[230px] object-cover rounded-lg flex-shrink-0"
+                                />
+                            ) : (
+                                <div className="w-[165px] h-[230px] bg-[#1a1a1a] rounded-lg flex-shrink-0 flex items-center justify-center">
+                                    <span className="text-[#444] text-xs">No Poster</span>
+                                </div>
+                            )}
 
-                            {/* Description + Info boxes */}
                             <div className="flex-1">
                                 <p className="text-gray-300 text-sm leading-relaxed mb-6">
-                                    {MOVIE.description}
+                                    {movie.description}
                                 </p>
 
-                                {/* Info Boxes */}
                                 <div className="flex gap-3">
                                     <div className="flex-1 border border-[#444] rounded-lg px-4 py-3">
                                         <p className="text-[#888] text-[10px] font-bold tracking-widest uppercase mb-1">Director</p>
-                                        <p className="text-white text-sm font-semibold">{MOVIE.director}</p>
+                                        <p className="text-white text-sm font-semibold">{movie.director}</p>
                                     </div>
                                     <div className="flex-1 border border-[#444] rounded-lg px-4 py-3">
                                         <p className="text-[#888] text-[10px] font-bold tracking-widest uppercase mb-1">Runtime</p>
-                                        <p className="text-white text-sm font-semibold">{MOVIE.runtime}</p>
+                                        <p className="text-white text-sm font-semibold">{movie.runtime}</p>
                                     </div>
                                     <div className="flex-1 border border-[#444] rounded-lg px-4 py-3">
                                         <p className="text-[#888] text-[10px] font-bold tracking-widest uppercase mb-1">Year</p>
-                                        <p className="text-white text-sm font-semibold">{MOVIE.year}</p>
+                                        <p className="text-white text-sm font-semibold">{movie.year}</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Match Score Box */}
+                        {/* Match Score Box (Mocked) */}
                         <div className="border border-[#E85D22]/40 rounded-lg px-5 py-4">
                             <p className="text-[#E85D22] text-xs font-bold tracking-widest uppercase mb-2">
-                                {MOVIE.matchScore}% Match For You
+                                {movie.matchScore}% Match For You
                             </p>
                             <p className="text-gray-400 text-sm leading-relaxed">
-                                Based on your 5-star rating of <strong className="text-white">Ex Machina</strong> and high marks for <strong className="text-white">Arrival</strong>. You consistently rate cerebral, emotionally-driven sci-fi at the top. <strong className="text-white">Interstellar</strong> matches this pattern with a <strong className="text-white">{MOVIE.matchScore}%</strong> matching score.
+                                {movie.matchReason}
                             </p>
                         </div>
                     </div>
 
                     {/* Right Column */}
                     <div className="w-64 flex-shrink-0">
-                        {/* IMDB Rating */}
-                        <p className="text-[#888] text-[10px] font-bold tracking-widest uppercase mb-3">IMDB Rating</p>
+                        <p className="text-[#888] text-[10px] font-bold tracking-widest uppercase mb-3">Rating</p>
                         <div className="flex items-center gap-3 mb-6">
-                            <span className="text-white text-5xl font-bold">{MOVIE.imdbRating}</span>
+                            <span className="text-white text-5xl font-bold">{movie.imdbRating}</span>
                             <div className="flex gap-1">
                                 {[1, 2, 3, 4, 5].map((star) => (
                                     <StarIcon key={star} className="w-6 h-6 text-[#E85D22]" />
@@ -209,22 +356,21 @@ const MovieDetail: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Divider */}
                         <div className="border-t border-[#444] mb-6" />
 
-                        {/* Director */}
                         <p className="text-[#888] text-[10px] font-bold tracking-widest uppercase mb-4">Director</p>
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-10 h-10 rounded-full bg-[#444] flex items-center justify-center flex-shrink-0">
-                                <span className="text-white text-xs font-bold">CN</span>
+                                <span className="text-white text-xs font-bold">
+                                    {movie.director !== 'Unknown' ? movie.director.split(' ').map((n: string) => n[0]).join('').substring(0,2) : '?'}
+                                </span>
                             </div>
-                            <span className="text-white text-sm font-semibold">{MOVIE.director}</span>
+                            <span className="text-white text-sm font-semibold">{movie.director}</span>
                         </div>
 
-                        {/* Cast */}
                         <p className="text-[#888] text-[10px] font-bold tracking-widest uppercase mb-4">Cast</p>
                         <div className="flex flex-col gap-4">
-                            {MOVIE.cast.map((member, idx) => (
+                            {movie.cast.map((member: any, idx: number) => (
                                 <div key={idx} className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full bg-[#444] flex items-center justify-center flex-shrink-0">
                                         <span className="text-white text-xs font-bold">{member.initials}</span>
@@ -234,7 +380,6 @@ const MovieDetail: React.FC = () => {
                             ))}
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
