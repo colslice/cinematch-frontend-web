@@ -34,6 +34,7 @@ const MovieRow: React.FC<MovieRowProps> = ({ movies, title, isLoading }) => {
                 {movies.map(movie => (
                     <MovieCard
                         key={movie.id}
+                        id={movie.id}
                         title={movie.title}
                         platform={movie.platform}
                         genre={movie.genre}

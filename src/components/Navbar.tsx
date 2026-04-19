@@ -23,6 +23,7 @@ const Navbar: React.FC = () => {
       const first = user.FirstName || "";
       const last = user.LastName || "";
 
+      // Create "JD" format safely
       if (first && last) {
         initials = `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
         displayName = `${first} ${last.charAt(0)}.`; // Creates "John D."
@@ -35,6 +36,7 @@ const Navbar: React.FC = () => {
     console.error('Error occurred while fetching user data:', error);
   }
 
+  // Handle Logout safely
   const handleLogout = () => {
     localStorage.removeItem("user");
     navigate("/login");
@@ -58,8 +60,8 @@ const Navbar: React.FC = () => {
         <Link to="/watchlist" className={`${isActive('/watchlist') ? 'text-white' : 'text-gray-400 hover:text-gray-200'} transition-colors`}>
           Watchlist
         </Link>
-        <Link to="/rating" className={`${isActive('/rating') ? 'text-white' : 'text-gray-400 hover:text-gray-200'} transition-colors`}>
-          My ratings
+        <Link to="/reviews" className={`${isActive('/reviews') ? 'text-white' : 'text-gray-400 hover:text-gray-200'} transition-colors`}>
+          My reviews
         </Link>
       </div>
 

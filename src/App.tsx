@@ -11,22 +11,17 @@ import Home from './pages/home.tsx'
 import MovieDetail from './pages/movie-detail'
 import Watchlist from './pages/watchlist'
 import Search from './pages/search.tsx'
-import React from 'react';
+import Reviews from './pages/reviews.tsx'
 
 function App() {
 
-  const [ready, setReady] = React.useState(false);
-  React.useEffect(() => {
-    setReady(true);
-  }, []);
-  if (!ready) return null;
-  const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user') || '{}') : null;
-  const isFirstLogin = user?.NewUser;
+  const user = localStorage.getItem('user');
+
   return (
     <BrowserRouter>
       <Routes>
       
-        <Route path="/" element={user ? isFirstLogin ? <Navigate to="/services" /> : <Home /> : <Splash />} />
+        <Route path="/" element={user ? <Home /> : <Splash />} />
         
         <Route path="/splash" element={<Splash />} />
         <Route path="/create" element={<Create />} />
@@ -34,6 +29,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/search" element={<Search />} />
+
+        <Route path="/" element={user ? <Home /> : <Splash />} />
 
         {/* The following routes are protected and will only render if the user is authenticated. Otherwise, they will redirect to the splash page. */}
         {/* if you need to test these routes, uncomment them and ensure the user is authenticated */}
@@ -47,6 +44,7 @@ function App() {
         <Route path="/watchlist" element={<Watchlist />} />
         */}
 
+        <Route path="/reviews" element={user ? <Reviews /> : <Navigate to="/" />} />
         <Route path="/home" element={user ? <Home /> : <Navigate to="/" />} />
         <Route path="/rating" element={user ? <Rating /> : <Navigate to="/" />} />
         <Route path="/services" element={user ? <Services /> : <Navigate to="/" />} />

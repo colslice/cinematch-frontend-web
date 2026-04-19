@@ -23,23 +23,28 @@ const MovieRow: React.FC<MovieRowProps> = ({ movies, title, isLoading }) => {
                 {title}
             </h2>
             {isLoading ? (
-                // THE SPINNER
-                <div className="flex items-center justify-start h-40">
-                    <div className="w-12 h-12 border-4 border-white/10 border-t-[#E85D22] rounded-full animate-spin"></div>
+                // empty space while loading
+                <div className="flex items-center justify-start h-50">
+                    <div className="w-16 h-16 border-4 border-white/10 border-t-[#E85D22] rounded-full animate-spin items-center justify-center "></div>
                 </div>
             ) : (
-            <div className="flex gap-6 overflow-x-auto snap-x snap-mandaroy snap-mandatory 
-                   [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                {movies.map(movie => (
-                    <MovieCard_2
-                        key={movie.id}
-                        title={movie.title}
-                        platform={movie.platform}
-                        genre={movie.genre}
-                        posterUrl={movie.posterUrl}
-                    />
-                ))}
-            </div>
+                <>
+                    <div className={`transition-opacity duration-1000 ease-in-out ${isLoading ? 'opacity-0' : 'opacity-100'}`}></div>
+                    <div className="flex gap-6 overflow-x-auto snap-x snap-mandaroy snap-mandatory 
+                        [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                        {movies.map(movie => (
+                            <MovieCard_2
+                                id={movie.id}
+                                key={movie.id}
+                                title={movie.title}
+                                platform={movie.platform}
+                                genre={movie.genre}
+                                posterUrl={movie.posterUrl}
+                            />
+                        ))}
+                    </div>
+                    <div className={`transition-opacity duration-1000 ease-in-out ${isLoading ? 'opacity-0' : 'opacity-100'}`}></div>
+                </>
             )}
         </div>
     );

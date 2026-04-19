@@ -2,37 +2,31 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import MovieRow_1 from '../components/MovieRow_1';
 import MovieRow_2 from '../components/MovieRow_2';
-import CONFIG from '../config';
 
 const HomeScreen: React.FC = () => {
     const [recommendedMovies, setRecommendedMovies] = useState<any[]>([]);
     const [genreMovies, setGenreMovies] = useState<Record<string, any[]>>({});
     const [loading, setLoading] = useState(true);
 
+    const userGenres = ["Drama", "Horror", "Animation"]; 
+
     const GENRE_MAP: Record<string, number> = {
         "Action": 28, "Adventure": 12, "Animation": 16,
-        "Comedy": 35, "Drama": 18, "Horror": 27, "Sci-Fi": 878, "Documentary": 99, "Family": 10751,
-          "Fantasy": 14, "History": 36, "Music": 10402,
-          "Mystery": 9648, "Romance": 10749, "Thriller": 53,
-          "War": 10752, "Western": 37
+        "Comedy": 35, "Drama": 18, "Horror": 27, "Sci-Fi": 878,
     };
 
-   
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) return;
-    const user = JSON.parse(storedUser);
-    const userGenres = string[] = user.FavGenre;
-    const genreIds = userGenres.map((name: string) => GENRE_MAP[name]).filter(Boolean);
-    
     useEffect(() => {
         const fetchAllData = async () => {
-            try {                
+            try {
+                const storedUser = localStorage.getItem("user");
+                if (!storedUser) return;
+
                 const user = JSON.parse(storedUser);
                 const userID = user._id;
-                const TMDB_API_KEY = CONFIG.TMDB_API_KEY;
+                const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
                 // 1. Fetch Recommendations
-                const recResponse = await fetch('https://cop4331project.xyz/api/recommend/', {
+                const recResponse = await fetch('/api/recommend/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userID: userID })
@@ -82,6 +76,7 @@ const HomeScreen: React.FC = () => {
         <div className="min-h-fit bg-black text-white font-sans pb-20">
             {/* Navbar stays visible immediately */}
             <Navbar />
+            <div className={`transition-opacity duration-1000 ease-in-out ${loading ? 'opacity-0' : 'opacity-100'}`}>
             
             {/* We pass isLoading down to the rows so they can handle the spinner */}
             <div className="max-w-full pl-16 pt-8">
@@ -101,6 +96,7 @@ const HomeScreen: React.FC = () => {
                     />
                 </div>
             ))}
+            </div>
         </div>
     );
 };

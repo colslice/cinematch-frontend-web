@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import CONFIG from '../config';
 
-// TMDB uses IDs for genres mapping
 const GENRE_MAP: { [key: number]: string } = {
   28: "Action", 12: "Adventure", 16: "Animation", 35: "Comedy", 80: "Crime",
   99: "Documentary", 18: "Drama", 10751: "Family", 14: "Fantasy", 36: "History",
@@ -23,7 +23,7 @@ interface MovieResult {
 }
 
 const Search: React.FC = () => {
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<MovieResult[]>([]);
     const [error, setError] = useState('');
@@ -31,14 +31,11 @@ const Search: React.FC = () => {
 
     const [watchlistIds, setWatchlistIds] = useState<Set<number>>(new Set());
 
-    useEffect(() => {
-        const savedUser = localStorage.getItem('user');
-        if (!savedUser) return;
+    const apiBase = CONFIG.API_BASE_URL;
 
         const fetchUserWatchlist = async () => {
             try {
                 const user = JSON.parse(savedUser);
-                // Utilizing Vite Proxy
                 const response = await fetch(`/api/watchlist/user/${user._id}`);
                 
                 if (response.ok) {
@@ -65,7 +62,9 @@ const Search: React.FC = () => {
         const delayDebounceFn = setTimeout(async () => {
             setIsLoading(true);
             try {
-                const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+                
+                const API_KEY = CONFIG.TMDB_API_KEY;
+                
                 const response = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(searchQuery)}&language=en-US&page=1`);
                 
                 if (!response.ok) throw new Error('Failed to fetch from TMDB');
@@ -121,8 +120,7 @@ const Search: React.FC = () => {
                 addedAt: new Date().toISOString()
             };
 
-            // Utilizing Vite Proxy
-            const response = await fetch('/api/watchlist', {
+            const response = await fetch(`${apiBase}/api/watchlist`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -150,7 +148,6 @@ const Search: React.FC = () => {
         <div className="min-h-screen bg-black text-white font-sans selection:bg-[#E85D22] selection:text-white">
             <Navbar />
 
-            <div className={`transition-opacity duration-1000 ease-in-out ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
             <main className="mx-auto px-8 md:px-32 pt-16 pb-24">
                 {/* Hero Section */}
                 <div className="mb-12">
@@ -259,7 +256,6 @@ const Search: React.FC = () => {
                     })}
                 </div>
             </main>
-            </div>
         </div>
     );
 };
