@@ -11,9 +11,15 @@ import Home from './pages/home.tsx'
 import MovieDetail from './pages/movie-detail'
 import Watchlist from './pages/watchlist'
 import Search from './pages/search.tsx'
+import React from 'react';
 
 function App() {
 
+  const [ready, setReady] = React.useState(false);
+  React.useEffect(() => {
+    setReady(true);
+  }, []);
+  if (!ready) return null;
   const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user') || '{}') : null;
   const isFirstLogin = user?.NewUser;
   return (
