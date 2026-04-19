@@ -25,6 +25,7 @@ const Verify: React.FC = () => {
             user.EmailVerified = true;
             localStorage.setItem("user", JSON.stringify(user));
           }
+          navigate('/rating');
         } catch (err) {
           console.error('Failed to update EmailVerified flag:', err);
         }

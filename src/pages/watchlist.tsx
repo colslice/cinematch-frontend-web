@@ -3,8 +3,8 @@ import { StarIcon } from '@heroicons/react/24/solid';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import Navbar from '../components/Navbar';
 
-// You will need your TMDB key here since the frontend has to hydrate the movie details
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+const apiBase = import.meta.env.VITE_API_BASE_URL;
 
 interface Stub {
     dbId: string;   // The MongoDB _id (used for deleting the record)
@@ -112,7 +112,6 @@ const StubCard: React.FC<StubCardProps> = ({ stub, onClick }) => (
 
 
 const WatchlistPage: React.FC = () => {
-    // --- LOCAL STORAGE LOGIC ADDED HERE ---
     const storedUser = localStorage.getItem('user');
     const userId = storedUser ? JSON.parse(storedUser)._id : null;
 
@@ -142,7 +141,7 @@ const WatchlistPage: React.FC = () => {
                 setError(null);
                 
                 // 1. Fetch from Express
-                const dbResponse = await fetch(`http://localhost:8080/api/watchlist/user/${userId}`, {
+                const dbResponse = await fetch(`${apiBase}/api/watchlist/user/${userId}`, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' },
                 });
@@ -154,7 +153,6 @@ const WatchlistPage: React.FC = () => {
                 const dbData = await dbResponse.json(); 
                 console.log(`[3] DB Data Parsed:`, dbData);
 
-                // Safety Check: Make sure it's an array before mapping
                 if (!Array.isArray(dbData)) {
                     throw new Error("Expected database to return an array, but got: " + typeof dbData);
                 }
@@ -165,7 +163,6 @@ const WatchlistPage: React.FC = () => {
                     return; // exit early if no movies
                 }
 
-                // 2. Fetch from TMDB
                 const hydratedStubsPromises = dbData.map(async (item: any) => {
                     try {
                         console.log(`[4a] Fetching TMDB for movieId: ${item.movieId}`);
@@ -237,7 +234,7 @@ const WatchlistPage: React.FC = () => {
         }, 700);
 
         try {
-            const deleteRes = await fetch(`http://localhost:8080/api/watchlist/${dbId}`, {
+            const deleteRes = await fetch(`${apiBase}/api/watchlist/${dbId}`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
             });
