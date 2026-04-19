@@ -13,7 +13,7 @@ dist-ssr
 *.local
 
 .env
-.sh
+*.sh
 src/firebase.ts
 public/config.js
 
