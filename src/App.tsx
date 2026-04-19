@@ -15,7 +15,7 @@ import Search from './pages/search.tsx'
 function App() {
 
   const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user') || '{}') : null;
-  const isFirstLogin = user?.isFirstLogin;
+  const isFirstLogin = user?.NewUser;
   return (
     <BrowserRouter>
       <Routes>

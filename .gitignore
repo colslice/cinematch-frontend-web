@@ -15,6 +15,7 @@ dist-ssr
 .env
 .sh
 src/firebase.ts
+public/config.js
 
 # Editor directories and files
 .vscode/*

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import { auth } from '../../firebase';
+import { auth } from '../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import CONFIG from '../config';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -39,14 +40,6 @@ if (!response.ok) throw new Error(data.error);
 
 localStorage.setItem("user", JSON.stringify(data));
 window.location.href = '/';
-
-      localStorage.setItem("user", JSON.stringify({
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName
-      }));
-
-      window.location.href = '/';
 
     } catch (err: any) {
       console.error('Error during login:', err);

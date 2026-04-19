@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
+import CONFIG from '../../config';
 
 const RateMoviesScreen: React.FC = () => {
   const navigate = useNavigate();
   
-  // --- STATE ---
   const [isCardShrunk, setIsCardShrunk] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hoveredStar, setHoveredStar] = useState<number | null>(null);
@@ -14,22 +14,20 @@ const RateMoviesScreen: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  // Data States
   const [movieQueue, setMovieQueue] = useState<any[]>([]);
   const [isFetchingMovies, setIsFetchingMovies] = useState(true);
 
-  // --- DYNAMIC VARIABLES ---
-  // FIXED: Actually pulls from the movieQueue state!
   const currentMovie = movieQueue[currentIndex];
   const totalMovies = movieQueue.length; 
-  // FIXED: Added totalMovies > 0 so it doesn't show "Finished" while loading
   const isFinished = totalMovies > 0 && currentIndex >= totalMovies;
 
+  const TMDB_API_KEY = CONFIG.TMDB_API_KEY;
+  const apiBase = CONFIG.API_BASE_URL;
+  
   useEffect(() => {
     const fetchInitialMovies = async () => {
       try {
-        // FIXED: Replaced process.env. Paste your actual key right here:
-        const TMDBurl = `https://api.themoviedb.org/3/movie/popular?api_key=d2c567d06a9f2e7bb934f8d35525de0e&language=en-US&page=1`;
+        const TMDBurl = `https://api.themoviedb.org/3/movie/popular?api_key=${TMDB_API_KEY}&language=en-US&page=1`;
         const response = await fetch(TMDBurl);
 
         if (!response.ok) {
@@ -94,7 +92,7 @@ const RateMoviesScreen: React.FC = () => {
         CreatedAt: new Date().toISOString()
       }
 
-      const response = await fetch('http://localhost:8080/api/reviews', {
+      const response = await fetch(`${apiBase}/api/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

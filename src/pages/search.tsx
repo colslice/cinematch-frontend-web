@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import CONFIG from '../config';
 
-// TMDB uses IDs for genres. We map them to text here so we don't need a separate API call.
 const GENRE_MAP: { [key: number]: string } = {
   28: "Action", 12: "Adventure", 16: "Animation", 35: "Comedy", 80: "Crime",
   99: "Documentary", 18: "Drama", 10751: "Family", 14: "Fantasy", 36: "History",
@@ -11,7 +10,6 @@ const GENRE_MAP: { [key: number]: string } = {
   10770: "TV Movie", 53: "Thriller", 10752: "War", 37: "Western"
 };
 
-// Define our movie type based on the UI needs
 interface MovieResult {
   id: number;
   title: string;
@@ -38,6 +36,7 @@ const Search: React.FC = () => {
         'Highest Match', 'Recently Added'
     ];
 
+    const apiBase = CONFIG.API_BASE_URL;
 
 
     // --- Search Fetching Logic with Debounce ---
@@ -48,7 +47,6 @@ const Search: React.FC = () => {
             return;
         }
 
-        // Set a delay so we don't spam the API on every keystroke
         const delayDebounceFn = setTimeout(async () => {
             setIsLoading(true);
             try {
@@ -112,7 +110,7 @@ const Search: React.FC = () => {
                 addedAt: new Date().toISOString()
             };
 
-            const response = await fetch('http://localhost:8080/api/watchlist', {
+            const response = await fetch(`${apiBase}/api/watchlist`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
