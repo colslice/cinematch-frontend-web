@@ -9,19 +9,24 @@ const HomeScreen: React.FC = () => {
     const [genreMovies, setGenreMovies] = useState<Record<string, any[]>>({});
     const [loading, setLoading] = useState(true);
 
-    const userGenres = ["Drama", "Horror", "Animation"]; 
-
     const GENRE_MAP: Record<string, number> = {
         "Action": 28, "Adventure": 12, "Animation": 16,
-        "Comedy": 35, "Drama": 18, "Horror": 27, "Sci-Fi": 878,
+        "Comedy": 35, "Drama": 18, "Horror": 27, "Sci-Fi": 878, "Documentary": 99, "Family": 10751,
+          "Fantasy": 14, "History": 36, "Music": 10402,
+          "Mystery": 9648, "Romance": 10749, "Thriller": 53,
+          "War": 10752, "Western": 37
     };
 
+   
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) return;
+    const user = JSON.parse(storedUser);
+    const userGenres = string[] = user.FavGenre;
+    const genreIds = userGenres.map((name: string) => GENRE_MAP[name]).filter(Boolean);
+    
     useEffect(() => {
         const fetchAllData = async () => {
-            try {
-                const storedUser = localStorage.getItem("user");
-                if (!storedUser) return;
-
+            try {                
                 const user = JSON.parse(storedUser);
                 const userID = user._id;
                 const TMDB_API_KEY = CONFIG.TMDB_API_KEY;
