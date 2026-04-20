@@ -1,3 +1,9 @@
+@font-face {
+  font-family: 'MyCustomSerif';
+  src: url('/fonts/my-serif.woff2') format('woff2');
+  font-display: swap; /* <--- Forces the browser to show text immediately */
+}
+
 @import "tailwindcss";
 
 body {

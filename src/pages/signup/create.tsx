@@ -95,17 +95,28 @@ const SplashScreen: React.FC = () => {
         .animate-marquee { animation: scroll 20s linear infinite; }
       `}</style>
 
-      <div className="flex flex-col lg:flex-row flex-grow">
+      <main className="flex flex-col lg:flex-row flex-grow">
+        
+        {/* Left Side (Beige) */}
         <div className="w-full lg:w-1/2 bg-[#F4F1EA] p-8 md:p-16 md:pb-24 flex flex-col relative min-h-[50vh] lg:min-h-0">
-          <div className="text-xl font-bold tracking-[0.2em] text-gray-500 mb-36">CINEMATCH</div>
+          {/* Logo / Brand Name */}
+          <div className="text-xl font-bold tracking-[0.2em] text-black mb-36">
+            CINEMATCH
+          </div>
+          
+          {/* Hero Typography */}
           <div className="mb-12">
             <h1 className="text-7xl md:text-8xl lg:text-[110px] font-serif tracking-tight leading-[0.9] text-black">Create your</h1>
             <h1 className="text-7xl md:text-8xl lg:text-[110px] font-serif italic text-[#E85D22] tracking-tight leading-[0.9]">account</h1>
           </div>
-          <p className="text-gray-500 text-lg md:text-xl max-w-md leading-relaxed mb-8 lg:mb-0">
+
+          <p className="text-black  text-lg md:text-xl max-w-md leading-relaxed mb-8 lg:mb-0">
             Start discovering movies made specifically for you
           </p>
-          <p className="text-gray-500 text-lg mt-auto text-center w-full flex justify-center items-center gap-2">
+          
+          <p className ="text-black text-lg mt-auto text-center w-full flex justify-center items-center gap-2">
+
+
             Already have an account? <a href="/login" className="text-[#E85D22] font-bold hover:underline">Sign in</a>
           </p>
         </div>
@@ -158,7 +169,7 @@ const SplashScreen: React.FC = () => {
             </form>
           </div>
         </div>
-      </div>
+      </main>
 
       <div className="w-full bg-[#E85D22] overflow-hidden py-4 border-t border-black/10">
         <div className="flex w-max animate-marquee">

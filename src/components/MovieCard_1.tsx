@@ -6,11 +6,11 @@ interface MovieCardProps {
   title: string;
   platform: string;
   genre: string;
-  match: string;
+  vote: string;
   posterUrl: string;
 }
 
-const MovieCard: React.FC<MovieCardProps> = ({ id, title, platform, genre, match, posterUrl }) => {
+const MovieCard: React.FC<MovieCardProps> = ({ id, title, platform, genre, vote, posterUrl }) => {
   return (
     /* Wrapping the card in a Link component */
     <Link to={`/movie/${id}`} className="block">
@@ -20,6 +20,7 @@ const MovieCard: React.FC<MovieCardProps> = ({ id, title, platform, genre, match
         <img 
           src={posterUrl} 
           alt={title} 
+          loading="lazy"
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
 
@@ -28,7 +29,7 @@ const MovieCard: React.FC<MovieCardProps> = ({ id, title, platform, genre, match
 
         {/* Match Badge */}
         <div className="absolute top-3 right-3 bg-[#E85D22] text-white text-xs font-bold px-2.5 py-1 rounded shadow-lg z-10">
-          {match}
+          {vote}
         </div>
 
         {/* Text Content */}

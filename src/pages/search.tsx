@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { StarIcon as StarSolid } from '@heroicons/react/24/solid'; // Added for the rating UI
 
 // TMDB uses IDs for genres mapping
 const GENRE_MAP: { [key: number]: string } = {
@@ -10,16 +11,17 @@ const GENRE_MAP: { [key: number]: string } = {
   10770: "TV Movie", 53: "Thriller", 10752: "War", 37: "Western"
 };
 
+// Updated Interface to include overview, TMDB rating, and vote count
 interface MovieResult {
   id: number;
   title: string;
   year: string;
   genres: string[];
-  match: number;
+  tmdbRating: string;
+  voteCount: number;
   image: string;
-  director?: string;
-  duration?: string;
-  services?: string[];
+  overview: string;
+  originalLanguage: string;
 }
 
 const Search: React.FC = () => {
@@ -78,13 +80,15 @@ const Search: React.FC = () => {
                         title: movie.title,
                         year: movie.release_date ? movie.release_date.split('-')[0] : 'N/A',
                         genres: movie.genre_ids ? movie.genre_ids.map((id: number) => GENRE_MAP[id]).filter(Boolean).slice(0, 3) : [],
-                        match: movie.vote_average ? Math.round(movie.vote_average * 10) : 0,
+                        // Grab the exact TMDB rating and vote count
+                        tmdbRating: movie.vote_average ? movie.vote_average.toFixed(1) : '0.0',
+                        voteCount: movie.vote_count || 0,
+                        // Grab the synopsis overview
+                        overview: movie.overview || 'No synopsis available for this title.',
+                        originalLanguage: movie.original_language || 'en',
                         image: movie.poster_path 
                             ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` 
-                            : 'https://via.placeholder.com/500x750/151515/FFFFFF?text=No+Poster',
-                        director: 'N/A', 
-                        duration: 'N/A', 
-                        services: ['Check Provider'] 
+                            : 'https://via.placeholder.com/500x750/151515/FFFFFF?text=No+Poster'
                     }));
                     
                     setSearchResults(formattedResults);
@@ -109,7 +113,6 @@ const Search: React.FC = () => {
             return;
         }
         
-        // Optimistic UI Update: Instantly show it as added before the DB responds
         setWatchlistIds(prev => new Set(prev).add(movieId));
 
         try {
@@ -121,12 +124,11 @@ const Search: React.FC = () => {
                 addedAt: new Date().toISOString()
             };
 
-            // Utilizing Vite Proxy
             const response = await fetch('/api/watchlist', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user.token}` // Keep this if your Express route requires it
+                    'Authorization': `Bearer ${user.token}` 
                 },
                 body: JSON.stringify(payload)
             });
@@ -136,7 +138,6 @@ const Search: React.FC = () => {
                 throw new Error(errorData.message || 'Failed to add to watchlist');
             }
         } catch (err: any) {
-            // If the database fails, revert the button back to its un-added state
             setWatchlistIds(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(movieId);
@@ -151,12 +152,12 @@ const Search: React.FC = () => {
             <Navbar />
 
             <div className={`transition-opacity duration-1000 ease-in-out ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
-            <main className="mx-auto px-8 md:px-32 pt-16 pb-24">
+            <main className="mx-auto px-5 md:px-8 lg:px-32 pt-8 md:pt-16 pb-24 max-w-10xl">
                 {/* Hero Section */}
-                <div className="mb-12">
-                    <h1 className="text-6xl md:text-7xl font-serif tracking-tight leading-none mb-2">Find your next</h1>
-                    <h1 className="text-6xl md:text-7xl font-serif italic text-[#E85D22] tracking-tight leading-none mb-6">film.</h1>
-                    <p className="text-gray-400 text-lg">Search across everything available on your services.</p>
+                <div className="mb-8 md:mb-12">
+                    <h1 className="text-5xl md:text-6xl lg:text-7xl font-serif tracking-tight leading-none mb-2">Find your next</h1>
+                    <h1 className="text-5xl md:text-6xl lg:text-7xl font-serif italic text-[#E85D22] tracking-tight leading-none mb-4 md:mb-6">film.</h1>
+                    <p className="text-gray-400 text-base md:text-lg">Search across everything available on your services.</p>
                 </div>
 
                 {/* Search Bar */}
@@ -181,51 +182,72 @@ const Search: React.FC = () => {
                 {error && <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-4 rounded-lg mb-8">{error}</div>}
 
                 {/* Results List */}
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-5">
                     {!isLoading && searchQuery && searchResults.length === 0 && (
                         <div className="text-gray-400 text-center py-12">No movies found matching "{searchQuery}"</div>
                     )}
 
                     {searchResults.map((movie) => {
-                        // Check if this specific movie is in our watchlist Set
                         const isAdded = watchlistIds.has(movie.id);
 
                         return (
                             <div 
                                 key={movie.id} 
                                 onClick={() => navigate(`/movie/${movie.id}`)}
-                                className="flex flex-col md:flex-row bg-[#151515] rounded-xl overflow-hidden border border-white/5 hover:border-white/10 transition-colors cursor-pointer group"
+                                className="flex flex-col md:flex-row bg-[#111] rounded-xl overflow-hidden border border-white/5 hover:border-white/10 transition-colors cursor-pointer group"
                             >
                                 {/* Movie Poster */}
-                                <div className="w-full md:w-32 h-48 md:h-auto flex-shrink-0 overflow-hidden">
-                                    <img src={movie.image} alt={movie.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                <div className="w-full md:w-40 lg:w-48 h-64 md:h-auto flex-shrink-0 overflow-hidden bg-black">
+                                    <img 
+                                        src={movie.image} 
+                                        alt={movie.title} 
+                                        loading="lazy" 
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                                    />
                                 </div>
 
                                 {/* Movie Info */}
-                                <div className="p-6 flex flex-col justify-between flex-grow">
+                                <div className="p-5 md:p-6 flex flex-col justify-between flex-grow">
                                     <div>
-                                        <h2 className="text-3xl font-serif font-bold mb-2 group-hover:text-[#E85D22] transition-colors">{movie.title}</h2>
-                                        <p className="text-gray-400 text-sm mb-4">
-                                            {movie.year} {movie.director !== 'N/A' && `· ${movie.director}`} {movie.duration !== 'N/A' && `· ${movie.duration}`}
+                                        <h2 className="text-2xl md:text-3xl font-serif font-bold mb-1 group-hover:text-[#E85D22] transition-colors line-clamp-1">{movie.title}</h2>
+                                        
+                                        <p className="text-gray-400 text-xs md:text-sm mb-3 md:mb-4 uppercase tracking-wider font-bold">
+                                            {movie.year} <span className="mx-2 opacity-50">|</span> {movie.originalLanguage}
                                         </p>
-                                        <div className="flex gap-2">
+                                        
+                                        <div className="flex flex-wrap gap-2 mb-4">
                                             {movie.genres.map((genre, idx) => (
-                                                <span key={idx} className="bg-white/5 text-gray-300 text-xs px-3 py-1 rounded-full font-medium">
+                                                <span key={idx} className="bg-white/5 border border-white/10 text-gray-300 text-[10px] md:text-xs px-3 py-1 rounded-full font-semibold uppercase tracking-wider">
                                                     {genre}
                                                 </span>
                                             ))}
                                         </div>
+
+                                        {/* NEW: Movie Synopsis */}
+                                        <p className="text-gray-400 text-sm leading-relaxed line-clamp-2 md:line-clamp-3 max-w-3xl">
+                                            {movie.overview}
+                                        </p>
                                     </div>
                                 </div>
 
                                 {/* Right Side Actions */}
                                 <div 
-                                    className="p-6 flex flex-col items-start md:items-end justify-between border-t md:border-t-0 md:border-l border-white/5 md:w-64"
+                                    className="p-5 md:p-6 flex flex-col items-start md:items-end justify-between border-t md:border-t-0 md:border-l border-white/5 md:w-64 flex-shrink-0 bg-[#0a0a0a]/50"
                                     onClick={(e) => e.stopPropagation()} 
                                 >
-                                    <div className="text-left md:text-right w-full mb-4 md:mb-0">
-                                        {movie.match > 0 ? (
-                                            <div className="text-4xl font-serif text-[#E85D22] mb-1">{movie.match}%</div>
+                                    {/* NEW: TMDB Rating Display */}
+                                    <div className="text-left md:text-right w-full mb-6 md:mb-0">
+                                        {movie.tmdbRating !== '0.0' ? (
+                                            <>
+                                                <div className="flex items-center md:justify-end gap-1.5 mb-1">
+                                                    <StarSolid className="w-6 h-6 md:w-7 md:h-7 text-[#E85D22]" />
+                                                    <span className="text-3xl md:text-4xl font-serif text-white">{movie.tmdbRating}</span>
+                                                    <span className="text-lg md:text-xl text-gray-500 font-serif">/10</span>
+                                                </div>
+                                                <div className="text-[10px] md:text-xs text-gray-500 uppercase tracking-widest font-bold">
+                                                    TMDB Rating <span className="opacity-50">({movie.voteCount.toLocaleString()} votes)</span>
+                                                </div>
+                                            </>
                                         ) : (
                                             <div className="text-lg font-serif text-gray-500 mb-1 mt-2">Unrated</div>
                                         )}
@@ -236,10 +258,10 @@ const Search: React.FC = () => {
                                             if (!isAdded) handleAddWatchlist(movie.id);
                                         }}
                                         disabled={isAdded}
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all w-full md:w-auto justify-center ${
+                                        className={`flex items-center gap-2 px-5 py-3 rounded-xl border text-sm font-bold transition-all w-full md:w-auto justify-center ${
                                             isAdded 
                                                 ? 'bg-white text-black border-white cursor-default' 
-                                                : 'border-white/20 text-white hover:bg-white/10 hover:border-[#E85D22]'
+                                                : 'border-white/20 text-white hover:bg-[#E85D22] hover:border-[#E85D22] hover:text-white'
                                         }`} 
                                     >
                                         {isAdded ? (

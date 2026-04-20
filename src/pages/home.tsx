@@ -68,7 +68,7 @@ const HomeScreen: React.FC = () => {
         title: movie.title,
         platform: movie.providers?.[0] || 'TMDB Popular',
         genre: movie.genres?.[0]?.toUpperCase() || 'MOVIE',
-        match: movie.vote_average ? `${Math.round(movie.vote_average * 10)}%` : '90%',
+        vote: movie.vote_average ? `${(movie.vote_average)}` : 'No Rating',
         posterUrl: `https://image.tmdb.org/t/p/w500${movie.poster_path}`
     });
 

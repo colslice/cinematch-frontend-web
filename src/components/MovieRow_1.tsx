@@ -6,7 +6,7 @@ interface MovieData {
     title: string;
     platform: string;
     genre: string;
-    match: string;
+    vote: string;
     posterUrl: string;
 }
 
@@ -38,7 +38,7 @@ const MovieRow: React.FC<MovieRowProps> = ({ movies, title, isLoading }) => {
                         title={movie.title}
                         platform={movie.platform}
                         genre={movie.genre}
-                        match={movie.match}
+                        vote={movie.vote}
                         posterUrl={movie.posterUrl}
                     />
                 ))}

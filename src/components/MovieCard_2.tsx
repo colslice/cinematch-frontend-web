@@ -18,6 +18,7 @@ const MovieCard_2: React.FC<MovieCardProps> = ({ id, title, platform, genre, pos
         <img 
           src={posterUrl} 
           alt={title} 
+          loading="lazy"
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
 

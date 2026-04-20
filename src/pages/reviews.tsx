@@ -3,7 +3,7 @@ import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import { EllipsisVerticalIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Navbar from '../components/Navbar'; // Adjust path if needed
 
-const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY; // Ensure this is set in your .env file
 
 interface RatedMovie {
     dbId: string;    // MongoDB _id
@@ -38,7 +38,7 @@ const RatingListItem: React.FC<{
             {/* Poster */}
             <div className="w-[60px] h-[150px] lg:w-[120px] lg:h-[180px] flex-shrink-0 bg-gray-800 rounded-xl overflow-hidden shadow-lg">
                 {movie.poster ? (
-                    <img src={movie.poster} alt={movie.title} className="w-full h-full object-cover" />
+                    <img src={movie.poster} loading="lazy" alt={movie.title} className="w-full h-full object-cover" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-500 text-[10px]">No Poster</div>
                 )}

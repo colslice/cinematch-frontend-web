@@ -158,9 +158,7 @@ const RateMoviesScreen: React.FC = () => {
 
         const response = await fetch(`https://api.themoviedb.org/3/discover/movie?${params}`);
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch movies. Please try again later.');
-        }
+        if (!response.ok) throw new Error('Failed to fetch movies. Please try again later.');
 
         const data = await response.json();
         const movies = data.results.slice(0, 20);
@@ -208,7 +206,6 @@ const RateMoviesScreen: React.FC = () => {
     fetchInitialMovies();
   }, []);
 
-  // --- HANDLERS ---
   const handleNextMovie = (action: () => void) => {
     setIsFading(true);
     setTimeout(() => {
@@ -224,10 +221,8 @@ const RateMoviesScreen: React.FC = () => {
     setError('');
     try {
       const storedUser = localStorage.getItem("user");
-
       if (!storedUser) {
         setError('No user data found. Please sign in again.');
-        setIsLoading(false);
         return;
       }
 
@@ -246,9 +241,7 @@ const RateMoviesScreen: React.FC = () => {
         body: JSON.stringify(payload)
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to submit rating. Please try again.');
-      }
+      if (!response.ok) throw new Error('Failed to submit rating. Please try again.');
 
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred');
@@ -340,7 +333,6 @@ const RateMoviesScreen: React.FC = () => {
             </div>
           </div>
 
-          {/* Typography & Instructions */}
           <div className="flex flex-col justify-center ml-4">
             <h1 className="text-6xl md:text-8xl lg:text-[110px] font-serif tracking-tight leading-[0.9] text-white mb-2">
               Tell us your
@@ -352,7 +344,6 @@ const RateMoviesScreen: React.FC = () => {
               Rate each card and save it. Skip anything you haven't seen.
             </p>
 
-            {/* Progress Bar */}
             <div className="max-w-md">
               <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
                 <span>Your ratings</span>
@@ -368,7 +359,6 @@ const RateMoviesScreen: React.FC = () => {
               </div>
             </div>
 
-            {/* Error Message Display */}
             {error && (
               <div className="mt-6 bg-red-500/10 border border-red-500/20 p-4 rounded-lg w-max text-red-500 text-sm">
                 {error}
@@ -409,6 +399,7 @@ const RateMoviesScreen: React.FC = () => {
                 <img
                   src={currentMovie.poster}
                   alt={currentMovie.title}
+                  loading="lazy"
                   className="w-full h-full object-cover"
                 />
               </div>

@@ -39,13 +39,12 @@ const SplashScreen: React.FC = () => {
         `}
       </style>
 
-      {/* Main Split Content */}
-      <div className="flex flex-col lg:flex-row flex-grow">
+      <main className="flex flex-col lg:flex-row flex-grow">
         
         {/* Left Side (Beige) */}
         <div className="w-full lg:w-1/2 bg-[#F4F1EA] p-8 md:p-16 md:pb-24 flex flex-col relative min-h-[50vh] lg:min-h-0">
           {/* Logo / Brand Name */}
-          <div className="text-xl font-bold tracking-[0.2em] text-gray-500 mb-16 lg:mb-32">
+          <div className="text-xl font-bold tracking-[0.2em] text-black mb-16 lg:mb-32">
             CINEMATCH
           </div>
           
@@ -62,7 +61,7 @@ const SplashScreen: React.FC = () => {
             </h1>
           </div>
 
-          <p className="text-gray-500 text-lg md:text-xl max-w-sm leading-relaxed mb-8 lg:mb-0">
+          <p className="text-black text-lg md:text-xl max-w-sm leading-relaxed mb-8 lg:mb-0">
             Smart recommendations filtered to what you can actually stream right now.
           </p>
         </div>
@@ -78,7 +77,7 @@ const SplashScreen: React.FC = () => {
               Find Your <br /> Next Film
             </h2>
             
-            <p className="text-gray-400 text-lg mb-12">
+            <p className="text-gray-300 text-lg mb-12">
               Rate what you've seen. Tell us your streaming services. We do the rest.
             </p>
 
@@ -95,7 +94,7 @@ const SplashScreen: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </main>
 
       {/* --- Infinite Scrolling Marquee --- */}
       <div className="w-full bg-[#E85D22] overflow-hidden py-4 border-t border-black/10">
