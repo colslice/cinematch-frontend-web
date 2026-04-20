@@ -1,7 +1,6 @@
-import React, { Suspense, lazy } from 'react';
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
-// 1. Convert standard imports to lazy imports
 const Services = lazy(() => import('./pages/signup/services'));
 const Splash = lazy(() => import('./pages/splash'));
 const Create = lazy(() => import('./pages/signup/create'));
