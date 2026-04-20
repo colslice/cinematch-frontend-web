@@ -6,14 +6,11 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [isAccountMenuOpen, setAccountMenuOpen] = useState(false);
 
-  // Helper to check if a link is active
   const isActive = (path: string) => location.pathname === path;
 
-  // 1. Set up variables for the name display
-  let initials = "U"; // Default fallback
+  let initials = "U";
   let displayName = "User";
 
-  // 2. Parse the user safely
   try {
     const storedUser = localStorage.getItem("user");
     
@@ -23,7 +20,6 @@ const Navbar: React.FC = () => {
       const first = user.FirstName || "";
       const last = user.LastName || "";
 
-      // Create "JD" format safely
       if (first && last) {
         initials = `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
         displayName = `${first} ${last.charAt(0)}.`; // Creates "John D."
@@ -36,7 +32,6 @@ const Navbar: React.FC = () => {
     console.error('Error occurred while fetching user data:', error);
   }
 
-  // Handle Logout safely
   const handleLogout = () => {
     localStorage.removeItem("user");
     navigate("/login");
@@ -61,7 +56,7 @@ const Navbar: React.FC = () => {
           Watchlist
         </Link>
         <Link to="/reviews" className={`${isActive('/reviews') ? 'text-white' : 'text-gray-400 hover:text-gray-200'} transition-colors`}>
-          My reviews
+          My Ratings
         </Link>
       </div>
 
@@ -81,9 +76,6 @@ const Navbar: React.FC = () => {
         {/* Account Dropdown */}
         {isAccountMenuOpen && (
           <div className="absolute right-0 top-12 mt-2 bg-[#141414] border border-white/10 rounded shadow-lg py-2 w-48 z-50">
-            <Link to="/account" className="block px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors">
-              Settings
-            </Link>
             <button 
               onClick={handleLogout}
               className="w-full text-left block px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
