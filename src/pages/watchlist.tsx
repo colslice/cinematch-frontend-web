@@ -115,8 +115,6 @@ const WatchlistPage: React.FC = () => {
     const storedUser = localStorage.getItem('user');
     const userId = storedUser ? JSON.parse(storedUser)._id : null;
 
-    console.log('--- WatchlistPage Render Triggered --- | userId from storage:', userId);
-
     const [stubs, setStubs] = useState<Stub[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -129,56 +127,49 @@ const WatchlistPage: React.FC = () => {
 
     useEffect(() => {
         if (!userId) {
-            console.log('[0] No userId available yet. Halting fetch.');
             setLoading(false);
             return;
         }
 
         const fetchWatchlist = async () => {
             try {
-                console.log(`[1] Starting DB fetch for user: ${userId}`);
                 setLoading(true);
                 setError(null);
                 
-                // 1. Fetch from Express
                 const dbResponse = await fetch(`${apiBase}/api/watchlist/user/${userId}`, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' },
                 });
 
-                console.log(`[2] DB Response Status:`, dbResponse.status);
 
                 if (!dbResponse.ok) throw new Error(`DB Fetch failed with status ${dbResponse.status}`);
                 
                 const dbData = await dbResponse.json(); 
-                console.log(`[3] DB Data Parsed:`, dbData);
 
                 if (!Array.isArray(dbData)) {
                     throw new Error("Expected database to return an array, but got: " + typeof dbData);
                 }
 
                 if (dbData.length === 0) {
-                    console.log('[3b] User has no movies in their watchlist.');
                     setStubs([]);
                     return; // exit early if no movies
                 }
 
                 const hydratedStubsPromises = dbData.map(async (item: any) => {
                     try {
-                        console.log(`[4a] Fetching TMDB for movieId: ${item.movieId}`);
                         const tmdbResponse = await fetch(
-                            `https://api.themoviedb.org/3/movie/${item.movieId}?api_key=${TMDB_API_KEY}`
+                            `https://api.themoviedb.org/3/movie/${item.movieId}?api_key=${TMDB_API_KEY}&append_to_response=watch/providers`
                         );
                         
                         if (!tmdbResponse.ok) {
                             console.warn(`[WARNING] TMDB failed for movieId ${item.movieId}`);
                             return null; 
                         }
-                        
+                   
                         const tmdbData = await tmdbResponse.json();
-                        console.log(`[4b] TMDB Success for ${item.movieId}:`, tmdbData.title);
+                        const providers = tmdbData['watch/providers']?.results?.US?.flatrate?.map((p: any) => p.provider_name) || [];  
 
-                        return {
+                         return {
                             dbId: item._id, 
                             movieId: item.movieId,
                             title: tmdbData.title,
@@ -186,7 +177,7 @@ const WatchlistPage: React.FC = () => {
                             poster: tmdbData.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}` : '',
                             vote: tmdbData.vote_average ? Number(tmdbData.vote_average.toFixed(1)) : 0, 
                             genre: tmdbData.genres?.[0]?.name || 'Cinema',
-                            service: 'VOD', 
+                            service: providers.length > 0 ? providers[0] : 'Unavailable', 
                             added: item.addedAt ? new Date(item.addedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Recently',
                             status: item.status
                         } as Stub;
@@ -199,7 +190,6 @@ const WatchlistPage: React.FC = () => {
 
                 const resolvedStubs = (await Promise.all(hydratedStubsPromises)).filter((stub): stub is Stub => stub !== null);
                 
-                console.log(`[5] All promises resolved. Final Hydrated Stubs:`, resolvedStubs);
                 setStubs(resolvedStubs);
 
             } catch (err: any) {
@@ -222,9 +212,8 @@ const WatchlistPage: React.FC = () => {
             return new Date(b.added).getTime() - new Date(a.added).getTime(); 
         });
 
-    const tearAndClose = async (dbId: string) => {
+    const tearAndClose = async (dbId: string, rating: number | null = null) => {
         setIsTearing(true);
-        console.log(`[DELETE] Starting removal for dbId: ${dbId}`);
         
         setTimeout(() => {
             setRemovedStubs(prev => new Set([...prev, dbId]));
@@ -234,11 +223,22 @@ const WatchlistPage: React.FC = () => {
         }, 700);
 
         try {
-            const deleteRes = await fetch(`${apiBase}/api/watchlist/${dbId}`, {
+            if (rating !== null && selectedStub) {
+                await fetch(`${apiBase}/api/reviews`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        movieId: selectedStub.movieId,
+                        rating,
+                        userId,
+                    }),
+            });
+        }
+    
+            await fetch(`${apiBase}/api/watchlist/${dbId}`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
             });
-            console.log(`[DELETE] Response Status:`, deleteRes.status);
         } catch (err) {
             console.error("[DELETE ERROR] Failed to remove from database:", err);
         }
@@ -399,7 +399,7 @@ const WatchlistPage: React.FC = () => {
                                         key={star}
                                         onMouseEnter={() => setHoveredStar(star)}
                                         onMouseLeave={() => setHoveredStar(null)}
-                                        onClick={() => tearAndClose(selectedStub.dbId)}
+                                        onClick={() => tearAndClose(selectedStub.dbId, star)}
                                         className="cursor-pointer transition-transform hover:scale-110"
                                     >
                                         <StarIcon
@@ -418,7 +418,7 @@ const WatchlistPage: React.FC = () => {
                             <div className="border-t border-white/10 mb-4" />
 
                             <button
-                                onClick={() => tearAndClose(selectedStub.dbId)}
+                                onClick={() => tearAndClose(selectedStub.dbId, null)}
                                 className="w-full text-center text-gray-400 text-sm hover:text-white transition-colors cursor-pointer"
                             >
                                 Skip &amp; mark as watched

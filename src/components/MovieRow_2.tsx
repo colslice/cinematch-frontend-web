@@ -23,14 +23,13 @@ const MovieRow: React.FC<MovieRowProps> = ({ movies, title, isLoading }) => {
                 {title}
             </h2>
             {isLoading ? (
-                // empty space while loading
                 <div className="flex items-center justify-start h-50">
                     <div className="w-16 h-16 border-4 border-white/10 border-t-[#E85D22] rounded-full animate-spin items-center justify-center "></div>
                 </div>
             ) : (
                 <>
                     <div className={`transition-opacity duration-1000 ease-in-out ${isLoading ? 'opacity-0' : 'opacity-100'}`}></div>
-                    <div className="flex gap-6 overflow-x-auto snap-x snap-mandaroy snap-mandatory 
+                    <div className="flex gap-6 overflow-x-auto snap-x snap-mandatory 
                         [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         {movies.map(movie => (
                             <MovieCard_2

@@ -25,7 +25,6 @@ const HomeScreen: React.FC = () => {
                 const userID = user._id;
                 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
-                // 1. Fetch Recommendations
                 const recResponse = await fetch('/api/recommend/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -33,7 +32,6 @@ const HomeScreen: React.FC = () => {
                 });
                 const recData = await recResponse.json();
                 
-                // 2. Fetch TMDB Genres
                 const genrePromises = userGenres.map(async (genre) => {
                     const genreId = GENRE_MAP[genre] || 18; 
                     const tmdbRes = await fetch(
@@ -51,6 +49,9 @@ const HomeScreen: React.FC = () => {
                     formattedGenreData[res.genre] = res.movies.map((m: any) => formatMovie(m));
                 });
 
+                console.log("Genres:", userGenres);
+                console.log("Genre Results:", genreResults);
+                console.log("Formatted:", formattedGenreData);
                 setRecommendedMovies(formattedRecs);
                 setGenreMovies(formattedGenreData);
             } catch (error) {

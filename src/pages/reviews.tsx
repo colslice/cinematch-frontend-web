@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import { EllipsisVerticalIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import Navbar from '../components/Navbar'; // Adjust path if needed
+import Navbar from '../components/Navbar'; 
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY; // Ensure this is set in your .env file
 
 interface RatedMovie {
-    dbId: string;    // MongoDB _id
-    movieId: string; // TMDB ID
+    dbId: string;  
+    movieId: string; 
     title: string;
     year: string;
     poster: string;
-    genres: string;  // Updated to hold the full comma-separated list
+    genres: string;  
     userRating: number;
-    tmdbRating: number; // Added for the TMDB score
+    tmdbRating: number; 
     ratedAt: string;
 }
 
@@ -123,14 +123,12 @@ const RatingsPage: React.FC = () => {
                 setLoading(true);
                 setError(null);
                 
-                // 1. Fetch ratings utilizing your Vite Proxy
                 const dbResponse = await fetch(`/api/reviews/user/${userId}`);
                 if (!dbResponse.ok) throw new Error('Failed to fetch ratings from database');
                 
                 const dbData = await dbResponse.json(); 
                 if (!Array.isArray(dbData)) throw new Error("Invalid database response");
 
-                // 2. Hydrate with TMDB Data
                 const hydratedPromises = dbData.map(async (item: any) => {
                     try {
                         const tmdbResponse = await fetch(
@@ -170,14 +168,12 @@ const RatingsPage: React.FC = () => {
         fetchRatings();
     }, [userId]);
 
-    // Sorting Logic
     const sortedMovies = [...movies].sort((a, b) => {
         if (activeSort === 'highest') return b.userRating - a.userRating;
         if (activeSort === 'lowest') return a.userRating - b.userRating;
         return new Date(b.ratedAt).getTime() - new Date(a.ratedAt).getTime();
     });
 
-    // Handle Updating a Rating
     const handleUpdateRating = async (newRating: number) => {
         if (!selectedMovie) return;
         setIsUpdating(true);
@@ -199,7 +195,6 @@ const RatingsPage: React.FC = () => {
         }
     };
 
-    // Handle Removing a Rating
     const handleDeleteRating = async (dbId: string) => {
         setIsUpdating(true);
         setActiveDropdownId(null);
@@ -208,7 +203,6 @@ const RatingsPage: React.FC = () => {
             setMovies(prev => prev.filter(m => m.dbId !== dbId));
             if (selectedMovie?.dbId === dbId) setSelectedMovie(null);
 
-            // Utilizing Vite Proxy
             await fetch(`/api/reviews/${dbId}`, {
                 method: 'DELETE',
             });

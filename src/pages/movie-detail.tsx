@@ -66,7 +66,7 @@ const MovieDetail: React.FC = () => {
                     imdbRating: data.vote_average ? data.vote_average.toFixed(1) : 'N/A',
                     cast: cast,
                     matchScore: 97,
-                    matchReason: 'Based on your viewing history, you consistently rate cerebral, emotionally-driven sci-fi at the top. This matches your pattern.',
+                    matchReason: 'Based on your viewing history, you consistently rate cerebral, emotionally-driven sci-fi at the top.',
                 });
             } catch (err: any) {
                 setError(err.message);
@@ -78,13 +78,11 @@ const MovieDetail: React.FC = () => {
         fetchMovieData();
     }, [id]);
 
-    // Is it in their watchlist/ratings?
     useEffect(() => {
         if (!userId || !id) return;
 
         const checkUserDatabaseStatus = async () => {
             try {
-                // Check Watchlist
                 const wlResponse = await fetch(`/api/watchlist/user/${userId}`);
                 if (wlResponse.ok) {
                     const wlData = await wlResponse.json();
@@ -160,7 +158,6 @@ const MovieDetail: React.FC = () => {
                     body: JSON.stringify({ rating: star })
                 });
             } else {
-                // Create new rating in DB
                 const response = await fetch(`/api/reviews`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
