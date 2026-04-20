@@ -19,6 +19,25 @@ const HomeScreen: React.FC = () => {
         Object.entries(GENRE_MAP).map(([name, id]) => [id, name])
     );
 
+    const fetchProviders = async (movieId: number, apiKey: string) => {
+        try {
+            const res = await fetch(
+                `https://api.themoviedb.org/3/movie/${movieId}?api_key=${apiKey}&append_to_response=watch/providers`
+            );
+
+            if (!res.ok) return [];
+
+            const data = await res.json();
+
+            return data['watch/providers']?.results?.US?.flatrate?.map(
+                (p: any) => p.provider_name
+            ) || [];
+
+        } catch {
+            return [];
+        }
+    };
+
     const storedUser = localStorage.getItem("user");
     if (!storedUser) return null;
 
@@ -40,6 +59,7 @@ const HomeScreen: React.FC = () => {
             try {
                 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
+                // Fetch recommendations
                 const recResponse = await fetch('/api/recommend/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -47,7 +67,8 @@ const HomeScreen: React.FC = () => {
                 });
 
                 const recData = await recResponse.json();
-                
+
+                // Fetch genre-based movies
                 const genreResults = await Promise.all(
                     userGenreIds.map(async (genreId) => {
                         const tmdbRes = await fetch(
@@ -62,15 +83,27 @@ const HomeScreen: React.FC = () => {
                     })
                 );
 
+                // Hydrate recommendations with providers (limit to 8)
                 const formattedRecs = Array.isArray(recData)
-                    ? recData.map(formatMovie)
+                    ? await Promise.all(
+                        recData.slice(0, 8).map(async (movie: any) => {
+                            const providers = await fetchProviders(movie.id, TMDB_API_KEY);
+                            return formatMovie(movie, providers);
+                        })
+                    )
                     : [];
 
+                // Hydrate genre rows with providers (limit to 8 per row)
                 const formattedGenreData: Record<number, any[]> = {};
-                genreResults.forEach(res => {
-                    formattedGenreData[res.genreId] =
-                        res.movies.map(formatMovie);
-                });
+
+                for (const res of genreResults) {
+                    formattedGenreData[res.genreId] = await Promise.all(
+                        res.movies.slice(0, 8).map(async (movie: any) => {
+                            const providers = await fetchProviders(movie.id, TMDB_API_KEY);
+                            return formatMovie(movie, providers);
+                        })
+                    );
+                }
 
                 setRecommendedMovies(formattedRecs);
                 setGenreMovies(formattedGenreData);
@@ -84,33 +117,34 @@ const HomeScreen: React.FC = () => {
 
         fetchAllData();
     }, []);
-    const formatMovie = (movie: any) => {
-    let firstGenreId: number | undefined;
 
-    if (movie.genre_ids?.length) {
-        firstGenreId = movie.genre_ids[0];
-    } else if (movie.genres?.length) {
-        if (typeof movie.genres[0] === 'object') {
-            firstGenreId = movie.genres[0].id;
-        } else if (typeof movie.genres[0] === 'string') {
-            const match = Object.entries(GENRE_MAP).find(
-                ([name]) => name.toLowerCase() === movie.genres[0].toLowerCase()
-            );
-            firstGenreId = match?.[1];
+    const formatMovie = (movie: any, providers: string[] = []) => {
+        let firstGenreId: number | undefined;
+
+        if (movie.genre_ids?.length) {
+            firstGenreId = movie.genre_ids[0];
+        } else if (movie.genres?.length) {
+            if (typeof movie.genres[0] === 'object') {
+                firstGenreId = movie.genres[0].id;
+            } else if (typeof movie.genres[0] === 'string') {
+                const match = Object.entries(GENRE_MAP).find(
+                    ([name]) => name.toLowerCase() === movie.genres[0].toLowerCase()
+                );
+                firstGenreId = match?.[1];
+            }
         }
-    }
 
-    return {
-        id: movie.id.toString(),
-        title: movie.title,
-        platform: movie.providers?.[0] || 'TMDB Popular',
-        genre: firstGenreId
-            ? (GENRE_ID_TO_NAME[firstGenreId] ?? 'MOVIE').toUpperCase()
-            : 'MOVIE',
-        vote: movie.vote_average ? `${movie.vote_average}` : 'No Rating',
-        posterUrl: `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+        return {
+            id: movie.id.toString(),
+            title: movie.title,
+            platform: providers[0] || 'Unavailable',
+            genre: firstGenreId
+                ? (GENRE_ID_TO_NAME[firstGenreId] ?? 'MOVIE').toUpperCase()
+                : 'MOVIE',
+            vote: movie.vote_average ? `${movie.vote_average}` : 'No Rating',
+            posterUrl: `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+        };
     };
-};
 
     return (
         <div className="min-h-fit bg-black text-white font-sans pb-20">
