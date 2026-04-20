@@ -125,7 +125,7 @@ const SplashScreen: React.FC = () => {
         <div className="w-full lg:w-1/2 bg-black p-8 md:p-16 flex flex-col min-h-[50vh] lg:min-h-0 md:pt-36">
           <div className="max-w-xl mx-auto w-full lg:mx-0 lg:ml-12">
             <p className="text-[#E85D22] text-lg font-bold tracking-widest uppercase mb-4">Your Details</p>
-            <h2 className="text-5xl md:text-6xl font-serif tracking-tight text-white mb-6 leading-tight">Lets Get Started.</h2>
+            <h2 className="text-5xl md:text-6xl font-serif tracking-tight text-white mb-6 leading-tight">Let's Get Started.</h2>
             <p className="text-gray-400 text-lg mb-12">Rate what you've seen. Tell us your streaming services. We do the rest.</p>
 
             <form onSubmit={handleSignup}>
