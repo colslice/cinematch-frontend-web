@@ -25,7 +25,7 @@ const Verify: React.FC = () => {
             user.EmailVerified = true;
             localStorage.setItem("user", JSON.stringify(user));
           }
-          navigate('/services');
+          window.location.href = '/services';
         } catch (err) {
           console.error('Failed to update EmailVerified flag:', err);
         }
@@ -43,7 +43,7 @@ const Verify: React.FC = () => {
     await user.reload();
 
     if (user.emailVerified) {
-      navigate('/services');
+      window.location.href = '/services';
     }
     }, 3000);
 
