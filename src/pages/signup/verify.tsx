@@ -25,7 +25,7 @@ const Verify: React.FC = () => {
             user.EmailVerified = true;
             localStorage.setItem("user", JSON.stringify(user));
           }
-          navigate('/rating');
+          navigate('/services');
         } catch (err) {
           console.error('Failed to update EmailVerified flag:', err);
         }
@@ -33,6 +33,23 @@ const Verify: React.FC = () => {
     });
     return () => unsubscribe();
   }, []);
+
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    await user.reload();
+
+    if (user.emailVerified) {
+      navigate('/services');
+    }
+    }, 3000);
+
+    return () => clearInterval(interval);
+    }, []);
+
 
   const handleResend = async () => {
     const currentUser = auth.currentUser;
