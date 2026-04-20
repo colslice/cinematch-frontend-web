@@ -57,18 +57,19 @@ window.location.href = '/';
   };
 
   const MarqueeContent = () => (
-    <div className="flex items-center space-x-6 px-3">
+    <div className="flex items-center space-x-6 px-3 gap-6">
       <span className="font-serif text-3xl font-bold tracking-tight text-black">CineMatch</span>
       <span className="text-white/70 text-sm">●</span>
-      <span className="text-lg text-white"><strong className="text-black">10,000+</strong> movies catalogued</span>
+      <span className="text-lg text-black">
+        <strong className="text-black">10,000+</strong> movies catalogued
+      </span>
       <span className="text-white/70 text-sm">●</span>
-      <span className="font-bold text-lg text-black">Netflix · Hulu · Apple TV+ <span className="font-normal text-white">· 5 more</span></span>
+      <span className="font-bold text-lg text-black">
+        Netflix · Hulu · Apple TV+ <span className="font-normal text-black">· 5 more</span>
+      </span>
       <span className="text-white/70 text-sm">●</span>
       <span className="font-serif italic text-3xl tracking-tight text-black">Your next favorite</span>
       <span className="text-white/70 text-sm">●</span>
-      <span className="text-lg text-white"><strong className="text-black">10,000+</strong> movies catalogued</span>
-      <span className="text-white/70 text-sm">●</span>
-      <span className="font-bold text-lg text-black">Netflix · Hulu · Apple TV+ <span className="font-normal text-white">· 5 more</span></span>
     </div>
   );
 
