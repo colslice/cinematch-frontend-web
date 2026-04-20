@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import { EllipsisVerticalIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Navbar from '../components/Navbar'; 
@@ -33,12 +34,20 @@ const RatingListItem: React.FC<{
     onEdit: () => void;
     onDelete: () => void;
 }> = ({ movie, isMenuOpen, onToggleMenu, onEdit, onDelete }) => {
+    
+    // NEW: Initialize navigate for the list item
+    const navigate = useNavigate();
+
     return (
-        <div className="flex items-start gap-5 w-full relative group">
+        <div 
+            // NEW: Added cursor-pointer and onClick to the main wrapper
+            onClick={() => navigate(`/movie/${movie.movieId}`)}
+            className="flex items-start gap-5 w-full relative group cursor-pointer hover:bg-white/5 p-2 -ml-2 rounded-xl transition-colors"
+        >
             {/* Poster */}
             <div className="w-[60px] h-[150px] lg:w-[120px] lg:h-[180px] flex-shrink-0 bg-gray-800 rounded-xl overflow-hidden shadow-lg">
                 {movie.poster ? (
-                    <img src={movie.poster} loading="lazy" alt={movie.title} className="w-full h-full object-cover" />
+                    <img src={movie.poster} loading="lazy" alt={movie.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-500 text-[10px]">No Poster</div>
                 )}
@@ -46,7 +55,7 @@ const RatingListItem: React.FC<{
 
             {/* Content */}
             <div className="flex-1 pt-1">
-                <h3 className="text-white font-bold text-lg leading-tight mb-1.5">{movie.title}</h3>
+                <h3 className="text-white font-bold text-lg leading-tight mb-1.5 group-hover:text-[#E85D22] transition-colors">{movie.title}</h3>
                 
                 <p className="text-gray-400 text-xs mb-2.5">
                     {movie.year} • {movie.genres}
@@ -68,15 +77,23 @@ const RatingListItem: React.FC<{
 
             {/* 3-Dot Menu Button */}
             <button 
-                onClick={onToggleMenu} 
-                className="p-2 text-gray-500 hover:text-white transition-colors"
+                // NEW: Added e.stopPropagation() so clicking the menu doesn't trigger the row's onClick navigation
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleMenu();
+                }} 
+                className="p-2 text-gray-500 hover:text-white transition-colors z-10"
             >
                 <EllipsisVerticalIcon className="w-6 h-6" />
             </button>
 
             {/* Dropdown Menu */}
             {isMenuOpen && (
-                <div className="absolute right-8 top-10 bg-[#222222] rounded-xl shadow-2xl py-2 w-40 z-20 border border-white/5">
+                <div 
+                    // NEW: Prevent clicks inside the dropdown from triggering navigation
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute right-8 top-10 bg-[#222222] rounded-xl shadow-2xl py-2 w-40 z-20 border border-white/5"
+                >
                     <button 
                         onClick={onEdit} 
                         className="w-full text-left px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors cursor-pointer"
@@ -97,7 +114,6 @@ const RatingListItem: React.FC<{
 
 // --- MAIN PAGE ---
 const RatingsPage: React.FC = () => {
-    // Get user from local storage
     const storedUser = localStorage.getItem('user');
     const userId = storedUser ? JSON.parse(storedUser)._id : null;
 
@@ -105,7 +121,6 @@ const RatingsPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Active States
     const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
     const [selectedMovie, setSelectedMovie] = useState<RatedMovie | null>(null);
     const [hoveredStar, setHoveredStar] = useState<number | null>(null);
@@ -182,7 +197,6 @@ const RatingsPage: React.FC = () => {
             setMovies(prev => prev.map(m => m.dbId === selectedMovie.dbId ? { ...m, userRating: newRating } : m));
             setSelectedMovie(null);
 
-            // Utilizing Vite Proxy
             await fetch(`/api/reviews/${selectedMovie.dbId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -212,8 +226,6 @@ const RatingsPage: React.FC = () => {
             setIsUpdating(false);
         }
     };
-
-    //if (loading) return <div className="min-h-screen bg-[#0d0d0d] text-white flex items-center justify-center font-sans">Loading Ratings...</div>;
     
     if (error) return (
         <div className="min-h-screen bg-[#0d0d0d] text-red-500 flex flex-col items-center justify-center font-sans p-10 text-center">
@@ -227,7 +239,6 @@ const RatingsPage: React.FC = () => {
             <Navbar />
             <div className={`transition-opacity duration-1000 ease-in-out ${loading ? 'opacity-0' : 'opacity-100'}`}>
 
-
             {/* Invisible overlay to close dropdowns when clicking outside */}
             {activeDropdownId && (
                 <div 
@@ -236,8 +247,6 @@ const RatingsPage: React.FC = () => {
                 />
             )}
 
-
-            {/* Adjusted padding to match the mobile/centered layout vibe */}
             <main className="px-8 md:px-40 pt-10 pb-16">
                 <p className="text-[#E85D22] text-sm font-bold tracking-widest uppercase mb-1">
                     Your Film Diary
@@ -292,7 +301,7 @@ const RatingsPage: React.FC = () => {
                 </div>
             </main>
 
-            {/* Edit Rating Modal (Preserved from original functionality) */}
+            {/* Edit Rating Modal */}
             {selectedMovie && (
                 <div
                     className="fixed inset-0 bg-black/[0.92] flex items-center justify-center z-50 p-4"
