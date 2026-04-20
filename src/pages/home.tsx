@@ -36,7 +36,7 @@ const HomeScreen: React.FC = () => {
                 const genrePromises = userGenres.map(async (genre) => {
                     const genreId = GENRE_MAP[genre] || 18; 
                     const tmdbRes = await fetch(
-                        `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genreId}&sort_by=popularity.desc`
+                        `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genreId}&sort_by=popularity.desc&vote_count.gte=500`
                     );
                     const tmdbData = await tmdbRes.json();
                     return { genre, movies: tmdbData.results };
@@ -50,9 +50,6 @@ const HomeScreen: React.FC = () => {
                     formattedGenreData[res.genre] = res.movies.map((m: any) => formatMovie(m));
                 });
 
-                console.log("Genres:", userGenres);
-                console.log("Genre Results:", genreResults);
-                console.log("Formatted:", formattedGenreData);
                 setRecommendedMovies(formattedRecs);
                 setGenreMovies(formattedGenreData);
             } catch (error) {
