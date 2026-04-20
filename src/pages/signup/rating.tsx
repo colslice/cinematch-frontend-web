@@ -3,98 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import CONFIG from '../../config';
 
-// --- MY RATINGS (Returning User View) ---
-const MyRatings: React.FC = () => {
-  const [ratings, setRatings] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
-  const apiBase = CONFIG.API_BASE_URL;
-
-  useEffect(() => {
-  const fetchRatings = async () => {
-  try {
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) return;
-    const user = JSON.parse(storedUser);
-
-    const response = await fetch(`${apiBase}/api/reviews/user/${user._id}`);
-    if (!response.ok) throw new Error('Failed to fetch ratings.');
-    const data = await response.json();
-
-    const withDetails = await Promise.all(
-      data.map(async (review: any) => {
-        try {
-          const tmdbRes = await fetch(
-            `https://api.themoviedb.org/3/movie/${review.movieId}?api_key=${CONFIG.TMDB_API_KEY}&language=en-US`
-          );
-          const movie = await tmdbRes.json();
-          return {
-            ...review,
-            title: movie.title,
-            poster: movie.poster_path
-              ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-              : null
-          };
-        } catch {
-          return review;
-        }
-      })
-    );
-
-    setRatings(withDetails);
-  } catch (err: any) {
-    setError(err.message || 'An error occurred.');
-  } finally {
-    setIsLoading(false);
-  }
-};  
-    fetchRatings();
-  }, []);
-
-  if (isLoading) return (
-    <div className="flex min-h-screen bg-black text-white items-center justify-center font-sans">
-      <div className="animate-pulse text-2xl text-[#E85D22] font-serif italic">Loading your ratings...</div>
-    </div>
-  );
-
-  return (
-    <div className="flex flex-col min-h-screen bg-black font-sans text-white p-8 md:p-16">
-      <div className="text-xl font-bold tracking-[0.2em] text-gray-500 mb-12">CINEMATCH</div>
-      <h1 className="text-6xl md:text-8xl font-serif tracking-tight leading-[0.9] text-white mb-2">Your</h1>
-      <h1 className="text-6xl md:text-8xl font-serif italic tracking-tight leading-[0.9] text-[#E85D22] mb-12">Ratings</h1>
-
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-lg text-red-500 text-sm mb-8">{error}</div>
-      )}
-
-      {ratings.length === 0 ? (
-        <p className="text-gray-400 text-lg">You haven't rated any movies yet.</p>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-          {ratings.map((rating: any) => (
-            <div key={rating._id} className="flex flex-col items-center gap-2">
-              <div className="w-full aspect-[2/3] rounded-xl overflow-hidden bg-[#1E1E1E]">
-                {rating.poster && (
-                  <img src={rating.poster} alt={rating.title} className="w-full h-full object-cover" />
-                )}
-              </div>
-              <p className="text-sm font-semibold text-center text-white leading-tight">{rating.title}</p>
-              <p className="text-[#E85D22] font-bold text-sm">{rating.rating / 2} / 5</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// --- RATE MOVIES (New User Onboarding View) ---
 const RateMoviesScreen: React.FC = () => {
   const navigate = useNavigate();
-
-  const storedUser = localStorage.getItem("user");
-  const user = storedUser ? JSON.parse(storedUser) : null;
-  const isReturningUser = user && !user.NewUser;
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hoveredStar, setHoveredStar] = useState<number | null>(null);
@@ -149,7 +59,6 @@ const RateMoviesScreen: React.FC = () => {
           api_key: TMDB_API_KEY,
           language: 'en-US',
           page: '1',
-          sort_by: 'vote_average.desc',
           include_adult: 'false',
           include_video: 'false',
           'vote_count.gte': '500',
@@ -276,10 +185,6 @@ const RateMoviesScreen: React.FC = () => {
     navigate('/home');
   };
 
-  // --- RETURNING USER ---
-  if (isReturningUser) {
-    return <MyRatings />;
-  }
 
   // --- LOADING SCREEN PROTECTOR ---
   if (isFetchingMovies) {
